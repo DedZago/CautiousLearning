@@ -1,16 +1,9 @@
 using DrWatson
 @quickactivate "CautiousLearning"
 
-println(
-"""
-Currently active project is: $(projectname())
+using Revise
+using StatisticalProcessControl
 
-Path of active project: $(projectdir())
+function runSim(ch, theta, m; IC = true, tau = 1, delta = 0.0, maxrl = 1e04)
 
-Have fun with your new project!
-
-You can help us improve DrWatson by opening
-issues on GitHub, submitting feature requests,
-or even opening your own Pull Requests!
-"""
-)
+end
