@@ -17,7 +17,8 @@ export EWMA,
         SelfStarting,
         check_update,
         get_warning_limit,
-        ControlChart
+        ControlChart,
+        DataSimulation
 
 abstract type AbstractSeries end
 
