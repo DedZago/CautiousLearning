@@ -58,7 +58,7 @@ Computes the control limit for a control chart such that it satisfies E[RL] = Ar
 """
 #? Set hstart to CH
 #? 
-function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixed=500, Afixed=0.1, Amin=0.1, Amax=100, delta=0.1, q=0.55, gamma=0.02, Nmin=1000, z = 3.0, Cmrl=10.0, maxiter = 4e05, verbose=true, eps = 1e-04)
+function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixed=500, Afixed=0.1, Amin=0.1, Amax=100, delta=0.1, q=0.55, gamma=0.02, Nmin=1000, z = 3.0, Cmrl=10.0, maxiter = 4e05, verbose=true, eps = 1e-04, adjusted=false)
     v = (z/gamma)^2
     sm = 0.0
     sp = 0.0
@@ -71,7 +71,12 @@ function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixe
     D = Amin
     i = 0
 
-
+    if adjusted
+        # Correction so that the resulting Arl0 estimate overshoots the true Arl0 with high probability
+        # instead of being centered around the true Arl0 (Equation 12 of Capizzi & Masarotto (2016)).
+        Arl0 = Arl0 / (1.0 - gamma)
+    end
+    
     if verbose println("Running SA ...") end
 
     while i < maxiter

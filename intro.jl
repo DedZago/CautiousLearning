@@ -10,7 +10,7 @@ include(srcdir("update_parameter.jl"))
 include(srcdir("simulate_runs.jl"))
 
 
-ch = AEWMA(l=0.15, L=1.5)
+ch = AEWMA(l=0.15, L=0.6)
 # um = CautiousLearning(L=0.2)
 um = SelfStarting()
 # um = FixedParameter()
@@ -19,15 +19,15 @@ D = Poisson(theta)
 m = 50
 maxrl = 3000
 
-Arl0 = 8
+Ats0 = 5
 
-sa_cl = saControlLimits(ch, um, runSimulation, Arl0, theta, D, m, verbose=false, Amin=0.1, maxiter=1e05, z=1.7)
+sa_ats = saControlLimits(ch, um, runSimulation, Ats0, theta, D, m, verbose=false, Amin=0.1, maxiter=1e05, gamma=0.03, adjusted=true)
 
-ch = typeof(ch)(ch, L = sa_cl[:h])
+ch = typeof(ch)(ch, L = sa_ats[:h])
 mean([runSimulation(ch, um, theta, D, m, maxrl=maxrl)[:t_alarm] for _ in 1:10000])
 
 ch = AEWMA(l=0.15, L=1.2)
-um = CautiousLearning(L = sa_cl[:h])
+um = CautiousLearning(L = sa_ats[:h])
 # um = SelfStarting()
 # um = FixedParameter()
 
