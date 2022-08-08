@@ -63,3 +63,13 @@ function gen_data_seq(D::Distribution, i; IC=true, tau = 1, delta = 0.0)
     out = rand(dist)
     return out
 end
+
+
+function get_confint(x; D = Poisson, conf=0.95, eps = 1e-08)
+    thetaHat = mean(x)
+    n = length(x)
+    alpha = 1.0 - conf
+    return (lower = max(eps, thetaHat + quantile(Normal(0,1), alpha/2.0)*sqrt(thetaHat/n)),
+            upper = thetaHat + quantile(Normal(0,1), 1.0 - alpha/2.0)*sqrt(thetaHat/n)
+            )
+end

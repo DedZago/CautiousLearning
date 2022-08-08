@@ -24,4 +24,11 @@ include(srcdir("generate_data.jl"))
 
     @test x == y
     @test y == z
+
+
+    Random.seed!(2)
+    theta = 30
+    D = Poisson(theta)
+    confintVec = [get_confint(rand(D, 100)) for _ in 1:1e05]
+    @test isapprox(mean([confintVec[i][1] <= theta <= confintVec[i][2] for i in eachindex(confintVec)]), 0.95, atol=0.02)
 end
