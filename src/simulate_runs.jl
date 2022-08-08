@@ -111,7 +111,7 @@ function GICP(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, ve
     return L
 end
 
-function adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, verbose=true)
+function adjust_chart_gicp(ch::C, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, verbose=true) where C <: UnivariateSeries
     L = GICP(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0, beta = beta, verbose = verbose)
     return typeof(ch)(ch, L = L)
 end
@@ -123,7 +123,7 @@ end
 function runConditionalSimulation(ncond, yinit, thetaHat, ch, um, D, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true)
 end
 
-function runExperiment(nsim, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true)
+function runNestedSimulations(nsim, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true)
     yinit = [rand(D, m) for _ in 1:nsim]
     thetaHat = [mean(x) for x in yinit]
 
@@ -148,7 +148,7 @@ function runExperiment(nsim, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float6
                 for d in eachindex(delta)
                     ocRun = [runSimulation(chart, um, thetaHat[i], D, m, IC=false, tau=tau[t], delta=delta[d], maxrl=maxrl) for _ in 1:ncond]
                     output = extract_statistics(ocRun)
-                    rlOCShared[t][d][i, :] = output
+                    rlOCShared[d][t][i, :] = output
                 end#for
             end#for
         end#if
@@ -157,7 +157,7 @@ function runExperiment(nsim, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float6
     icOutput = convert(Array, rlICShared)
     ocOutput = Dict(
         t => Dict(
-            d => convert(Array, rlOCShared[t][d]) for d in eachindex(delta)
+            d => convert(Array, rlOCShared[d][t]) for d in eachindex(delta)
         ) for t in eachindex(tau)
     )
 

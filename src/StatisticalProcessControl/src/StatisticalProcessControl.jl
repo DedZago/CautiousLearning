@@ -2,7 +2,10 @@ module StatisticalProcessControl
 
 using Parameters
 
-export EWMA,
+export UnivariateSeries,
+        SingleSidedUnivariateSeries,
+        DoubleSidedUnivariateSeries,
+        EWMA,
         AEWMA,
         get_params,
         get_limits,
