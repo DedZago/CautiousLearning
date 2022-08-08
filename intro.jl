@@ -1,14 +1,16 @@
-using DrWatson
-@quickactivate "CautiousLearning"
+using Distributed
+addprocs(2)
+@everywhere using DrWatson
+@everywhere @quickactivate "CautiousLearning"
 
-using Revise
-using StatisticalProcessControl
-using Distributions
+@everywhere using Revise
+@everywhere using StatisticalProcessControl
+@everywhere using Distributions
+@everywhere using SharedArrays
 
-include(srcdir("generate_data.jl"))
-include(srcdir("update_parameter.jl"))
-include(srcdir("simulate_runs.jl"))
-
+@everywhere include(srcdir("generate_data.jl"))
+@everywhere include(srcdir("update_parameter.jl"))
+@everywhere include(srcdir("simulate_runs.jl"))
 
 ch = AEWMA(l=0.15, L=0.6)
 # um = CautiousLearning(L=0.2)
@@ -26,20 +28,19 @@ sa_ats = saControlLimits(ch, um, runSimulation, Ats0, theta, D, m, verbose=false
 ch = typeof(ch)(ch, L = sa_ats[:h])
 mean([runSimulation(ch, um, theta, D, m, maxrl=maxrl)[:t_alarm] for _ in 1:10000])
 
-ch = AEWMA(l=0.15, L=1.2)
-um = CautiousLearning(L = sa_ats[:h])
-# um = SelfStarting()
+ch = EWMA(l=0.15, L=1.2)
+um = CautiousLearning(L = 0.12)
+um = SelfStarting()
 # um = FixedParameter()
 
-IC = false
-delta = 0.75
-tau = 50
-tmpList = [runExperiment(ch, um, D, m, IC=IC, delta=delta, tau=tau) for _ in 1:10000]
+IC = [true, false]
+delta = [0.5]
+tau = 1
 
-mean([sim[:t_alarm] for sim in tmpList])
-
-
-tmp = runExperiment(ch, um, D, m, IC=IC, delta=delta, tau=tau)
+Arl0 = 30
+ncond = 10000
+tmp = runExperiment(1, ncond, ch, um, D, m, Arl0, IC=IC, delta=delta, tau=tau);
+mean([out[:t_alarm]] for out in tmp)
 
 using Plots
 plot(tmp[:chart_values], legend=:outerright, label="C")

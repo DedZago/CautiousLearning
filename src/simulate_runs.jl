@@ -1,4 +1,3 @@
-
 function chart_statistic(x, thetaHat)
     return (x - thetaHat)/sqrt(thetaHat)
 end
@@ -42,22 +41,14 @@ function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=
 
 end
 
-function runExperiment(ch, um, D, m; IC=true, tau=1, delta=0.0, maxrl=1e04)
-    yinit = rand(D, m)
-    thetaHat = mean(yinit)
 
-    return runSimulation(ch, um, thetaHat, D, m, IC=IC, tau=tau, delta=delta, maxrl=maxrl)
-end
-
-
-#! TODO: adapt to work with control charts
 """
-	stochasticApproximationPCC(hstart::Real, rlsim::Function, Arl0::Real; kw...)
+	saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; kw...)
 
-Computes the control limit for a control chart such that it satisfies E[RL] = Arl0.
+Computes the control limit for a control chart `ch` with update mechanism `um` such that it satisfies E[RL] = Arl0.
+
+Setting `adjusted = false` ensures that E[RL] >= Arl0.
 """
-#? Set hstart to CH
-#? 
 function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixed=500, Afixed=0.1, Amin=0.1, Amax=100, delta=0.1, q=0.55, gamma=0.02, Nmin=1000, z = 3.0, Cmrl=10.0, maxiter = 4e05, verbose=true, eps = 1e-04, adjusted=false)
     v = (z/gamma)^2
     sm = 0.0
@@ -101,4 +92,74 @@ function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixe
     if verbose println("Done.") end
 
     return (h=hm, iter=i)
+end
+
+function GICP(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, verbose=true)
+    CI = get_confint(yinit, conf = 1.0 - beta)
+
+    if verbose println("Calculating GICP for lower extrema...") end
+    Llow = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI[1]), m,
+                            verbose=false, Amin=0.1, maxiter=1e05, gamma=0.03, adjusted=true)
+    if verbose println("Done.") end
+
+    if verbose println("Calculating GICP for upper extrema...") end
+    Lup = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI[2]), m,
+                            verbose=false, Amin=0.1, maxiter=1e05, gamma=0.03, adjusted=true)
+    if verbose println("Done.") end
+
+    L = max(Llow[:h], Lup[:h])
+    return L
+end
+
+function adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, verbose=true)
+    L = GICP(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0, beta = beta, verbose = verbose)
+    return typeof(ch)(ch, L = L)
+end
+
+function extract_statistics(conditionalRun)
+    return [cr[:t_alarm] for cr in conditionalRun]
+end
+
+function runConditionalSimulation(ncond, yinit, thetaHat, ch, um, D, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true)
+end
+
+function runExperiment(nsim, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true)
+    yinit = [rand(D, m) for _ in 1:nsim]
+    thetaHat = [mean(x) for x in yinit]
+
+    rlICShared = SharedArray{Float64}(nsim, ncond)
+    rlOCShared = [[SharedArray{Float64}(nsim, ncond) for t in tau] for d in delta if false in IC]
+
+    @sync @distributed for i in eachindex(yinit)
+        if beta == false
+            chart = deepcopy(ch)
+        else
+            chart = adjust_chart_gicp(ch, um, yinit[i], thetaHat[i], runSimulation, D, m, Arl0, beta=beta, verbose=verbose)
+        end
+        
+        if true in IC
+            icRun = [runSimulation(chart, um, thetaHat[i], D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl) for _ in 1:ncond]
+            output = extract_statistics(icRun)
+            rlICShared[i, :] = output
+        end
+
+        if false in IC
+            for t in eachindex(tau)
+                for d in eachindex(delta)
+                    ocRun = [runSimulation(chart, um, thetaHat[i], D, m, IC=false, tau=tau[t], delta=delta[d], maxrl=maxrl) for _ in 1:ncond]
+                    output = extract_statistics(ocRun)
+                    rlOCShared[t][d][i, :] = output
+                end#for
+            end#for
+        end#if
+    end#for
+
+    icOutput = convert(Array, rlICShared)
+    ocOutput = Dict(
+        t => Dict(
+            d => convert(Array, rlOCShared[t][d]) for d in eachindex(delta)
+        ) for t in eachindex(tau)
+    )
+
+    return Dict("IC" => icOutput, "OC" => ocOutput)
 end
