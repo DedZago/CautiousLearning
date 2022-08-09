@@ -120,64 +120,60 @@ function extract_statistics(conditionalRun)
     return [cr[:t_alarm] for cr in conditionalRun]
 end
 
+function runConditionalSimulation(yinit, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
+    thetaHat = mean(yinit)
+    rlIC = zeros(ncond)
+    rlOC = [[zeros(ncond) for t in tau] for d in delta if false in IC]
+    if isa(um, CautiousLearning)
+        # Estimate cautious learning limit
+        if verbose println("Calculating limits for target ATS...") end
+        Ats0 = get_ATS(um)
+        sa_ats = saControlLimits(ch, um, runSimulation, Ats0, thetaHat, D,
+                                m, verbose=false, Amin=0.1, maxiter=1e05,
+                                gamma=0.03, adjusted=true, seed=seed)
+        um = CautiousLearning(L = sa_ats[:h], ATS = Ats0)
+    end
+
+    if beta == false
+        chart = deepcopy(ch)
+    else
+        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0, beta=beta, verbose=verbose, seed=seed + 1)
+    end
+    
+    if verbose println("Running simulated charts...") end
+    if true in IC
+        seed_offset = 2
+        icRun = [runSimulation(chart, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
+        output = extract_statistics(icRun)
+        rlIC = output
+    end
+
+    if false in IC
+        for t in eachindex(tau)
+            for d in eachindex(delta)
+                seed_offset = 2 + ncond + t*length(delta) + d
+                ocRun = [runSimulation(chart, um, thetaHat, D, m, IC=false, tau=tau[t], delta=delta[d], maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
+                output = extract_statistics(ocRun)
+                rlOC[d][t] = output
+            end#for
+        end#for
+    end#if
+    return (IC = rlIC, OC = rlOC)
+end
+
 function runNestedSimulations(ncond, yinit, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
     nsim = length(yinit)
-    thetaHatVec = [mean(x) for x in yinit]
 
-    rlICShared = SharedArray{Float64}(nsim, ncond)
-    rlOCShared = [[SharedArray{Float64}(nsim, ncond) for t in tau] for d in delta if false in IC]
-
-    # Pr = Progress(nsim)
-    # update!(Pr)
-    Progress_index = SharedVector{Int}(1)
-    println("Progress: 0/" * string(nsim))
-    @sync @distributed for i in eachindex(yinit)
-        if isa(um, CautiousLearning)
-            # Estimate cautious learning limit
-            if verbose println("Calculating limits for target ATS...") end
-            Ats0 = get_ATS(um)
-            sa_ats = saControlLimits(ch, um, runSimulation, Ats0, thetaHatVec[i], D,
-                                    m, verbose=false, Amin=0.1, maxiter=1e05,
-                                    gamma=0.03, adjusted=true, seed=seed + i)
-            um = CautiousLearning(L = sa_ats[:h], ATS = Ats0)
-        end
-
-        if beta == false
-            chart = deepcopy(ch)
-        else
-            chart = adjust_chart_gicp(ch, um, yinit[i], thetaHatVec[i], runSimulation, D, m, Arl0, beta=beta, verbose=verbose, seed=seed + i + 1)
-        end
-        
-        if verbose println("Running simulated charts...") end
-        if true in IC
-            seed_offset = 1 + i
-            icRun = [runSimulation(chart, um, thetaHatVec[i], D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
-            output = extract_statistics(icRun)
-            rlICShared[i, :] = output
-        end
-
-        if false in IC
-            for t in eachindex(tau)
-                for d in eachindex(delta)
-                    seed_offset = 1 + i + t*length(delta) + d
-                    ocRun = [runSimulation(chart, um, thetaHatVec[i], D, m, IC=false, tau=tau[t], delta=delta[d], maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
-                    output = extract_statistics(ocRun)
-                    rlOCShared[d][t][i, :] = output
-                end#for
-            end#for
-        end#if
-        Progress_index[1] += 1
-        println("Progress: " * string(first(Progress_index)) * "/" * string(nsim))
-    end#for
-
+    out = pmap((i) -> runConditionalSimulation(yinit[i], ncond, ch, um ,D, m, Arl0, beta=beta, IC=IC, tau=tau, delta=delta, maxrl = maxrl, verbose=verbose, seed=seed+i), 1:length(yinit))
     if verbose println("Done.") end
+
     colnames = ["tau", "delta", "rl"]
     dfOutput = DataFrame([name => [] for name in colnames])
-    rlIC = convert(Array, rlICShared)
+    rlIC = permutedims(hcat([v[:IC] for v in out]...))
     push!(dfOutput, [0.0, 0.0, rlIC])
     for t in eachindex(tau)
         for d in eachindex(delta)
-            rlOC = convert(Array, rlOCShared[d][t])
+            rlOC = permutedims(hcat([v[:OC][d][t] for v in out]...))
             push!(dfOutput, [tau[t], delta[d], rlOC])
         end#for
     end#for
