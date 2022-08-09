@@ -7,6 +7,7 @@ function check_update(::C, ::SelfStarting) where C <: UnivariateSeries
 end
 
 get_warning_limit(um::SelfStarting) = Inf
+get_ATS(um::SelfStarting) = Inf
 
 struct FixedParameter <: AbstractUpdate end
 function check_update(::C, ::FixedParameter) where C <: UnivariateSeries
@@ -14,13 +15,16 @@ function check_update(::C, ::FixedParameter) where C <: UnivariateSeries
 end
 
 get_warning_limit(um::FixedParameter) = 0.0
+get_ATS(um::FixedParameter) = 1
 
 
 @with_kw struct CautiousLearning <: AbstractUpdate
-    L = 0.0
+    L = 0.5
+    ATS::Int = 3.0
 end
 
 get_warning_limit(um::CautiousLearning) = um.L
+get_ATS(um::CautiousLearning) = um.ATS
 
 """
 	check_update(ch, um)
