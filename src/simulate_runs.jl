@@ -120,7 +120,7 @@ function extract_statistics(conditionalRun)
     return [cr[:t_alarm] for cr in conditionalRun]
 end
 
-function runConditionalSimulation(yinit, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
+function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
     thetaHat = mean(yinit)
     rlIC = zeros(ncond)
     rlOC = [[zeros(ncond) for t in tau] for d in delta if false in IC]
@@ -140,7 +140,7 @@ function runConditionalSimulation(yinit, ncond, ch, um, D, m, Arl0; beta::Union{
         chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0, beta=beta, verbose=verbose, seed=seed + 1)
     end
     
-    if verbose println("Running simulated charts...") end
+    if verbose println("Simulating run lengths...") end
     if true in IC
         seed_offset = 2
         icRun = [runSimulation(chart, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
@@ -161,19 +161,15 @@ function runConditionalSimulation(yinit, ncond, ch, um, D, m, Arl0; beta::Union{
     return (IC = rlIC, OC = rlOC)
 end
 
-function runNestedSimulations(ncond, yinit, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
-    nsim = length(yinit)
-
-    out = pmap((i) -> runConditionalSimulation(yinit[i], ncond, ch, um ,D, m, Arl0, beta=beta, IC=IC, tau=tau, delta=delta, maxrl = maxrl, verbose=verbose, seed=seed+i), 1:length(yinit))
-    if verbose println("Done.") end
-
+function condSimToDf(out, tau, delta)
+    # Save everything as a dataframe
     colnames = ["tau", "delta", "rl"]
     dfOutput = DataFrame([name => [] for name in colnames])
-    rlIC = permutedims(hcat([v[:IC] for v in out]...))
+    rlIC = out[:IC]
     push!(dfOutput, [0.0, 0.0, rlIC])
     for t in eachindex(tau)
         for d in eachindex(delta)
-            rlOC = permutedims(hcat([v[:OC][d][t] for v in out]...))
+            rlOC = out[:OC][d][t]
             push!(dfOutput, [tau[t], delta[d], rlOC])
         end#for
     end#for
@@ -181,8 +177,26 @@ function runNestedSimulations(ncond, yinit, ch, um, D, m, Arl0; beta::Union{Bool
     return dfOutput
 end
 
+# function runNestedSimulations(ncond, yinit, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
+#     nsim = length(yinit)
+
+#     out = pmap((i) -> runConditionalSimulation(yinit[i], ncond, ch, um ,D, m, Arl0, beta=beta, IC=IC, tau=tau, delta=delta, maxrl = maxrl, verbose=verbose, seed=seed+i), 1:length(yinit))
+
+#     colnames = ["tau", "delta", "rl"]
+#     dfOutput = DataFrame([name => [] for name in colnames])
+#     rlIC = permutedims(hcat([v[:IC] for v in out]...))
+#     push!(dfOutput, [0.0, 0.0, rlIC])
+#     for t in eachindex(tau)
+#         for d in eachindex(delta)
+#             rlOC = permutedims(hcat([v[:OC][d][t] for v in out]...))
+#             push!(dfOutput, [tau[t], delta[d], rlOC])
+#         end#for
+#     end#for
+
+#     return dfOutput
+# end
+
 function runExperiment(config::SimulationSettings)
-    nsim    = config.nsim
     ncond   = config.ncond
     ch      = config.ch
     um      = config.um
@@ -197,8 +211,15 @@ function runExperiment(config::SimulationSettings)
     verbose = config.verbose
     seed    = config.seed
 
-    Random.seed!(seed)
-    yinit = [rand(D, m) for _ in 1:nsim]
-    out = runNestedSimulations(ncond, yinit, ch, um, D, m, Arl0, beta=beta, IC=IC, delta=delta, tau=tau, verbose=verbose, maxrl=maxrl, seed=seed)
+    simulation = config.simulation
+
+    Random.seed!(seed + simulation)
+    yinit = rand(D, m)
+    out = runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0, beta=beta, IC=IC, delta=delta, tau=tau, verbose=verbose, maxrl=maxrl, seed=seed)
+    if verbose println("Done.") end
+    df = condSimToDf(out, tau, delta)
+    sim = [cfg.simulation for _ in 1:nrow(df)]
+    df = hcat(sim, df)
+    rename!(df, :x1 => :sim)
     return out
 end
