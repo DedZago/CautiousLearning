@@ -221,5 +221,5 @@ function runExperiment(config::SimulationSettings)
     sim = [cfg.simulation for _ in 1:nrow(df)]
     df = hcat(sim, df)
     rename!(df, :x1 => :sim)
-    return out
+    return df
 end
