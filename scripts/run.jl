@@ -33,9 +33,10 @@ verbose = true
 
 println("Starting simulations...")
 for cfg in config
+    println(cfg.um)
     @showprogress for i in 1:nsim_each
         sleep(0.5)
-        cfg_thread = SimulationSettings(cfg, simulation = i + (current_thread-1) * nsim_each, verbose=false)
+        cfg_thread = SimulationSettings(cfg, simulation = i + (current_thread-1) * nsim_each)
         svname = datadir("sims", folder, string(cfg.um), savename(cfg_thread, "jld2"))
         if isfile(svname)
             continue

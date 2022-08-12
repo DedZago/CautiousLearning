@@ -222,9 +222,11 @@ function runExperiment(cfg::SimulationSettings; verbose=true)
     delta   = cfg.delta
     maxrl   = cfg.maxrl
     simulation = cfg.simulation
-    
-    seed    = cfg.seed + simulation
-    Random.seed!(seed)
+        
+    # Set simulation seed
+    Random.seed!(cfg.seed + simulation)
+
+    seed = rand(Uniform(1, 1e08))
     yinit = rand(D, m)
     out = runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0, beta=beta, IC=IC, delta=delta, tau=tau, verbose=verbose, maxrl=maxrl, seed=seed)
     if verbose println("Done.") end
