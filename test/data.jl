@@ -1,5 +1,7 @@
-include(srcdir("generate_data.jl"))
+using DrWatson
+@quickactivate "CautiousLearning"
 
+include(srcdir("generate_data.jl"))
 
 @testset "Poisson generation" begin
     theta = 2.0
@@ -28,7 +30,17 @@ include(srcdir("generate_data.jl"))
 
     Random.seed!(2)
     theta = 30
+    alpha = 0.9
     D = Poisson(theta)
-    confintVec = [get_confint(rand(D, 100)) for _ in 1:1e05]
-    @test isapprox(mean([confintVec[i][1] <= theta <= confintVec[i][2] for i in eachindex(confintVec)]), 0.95, atol=0.02)
+    ch = EWMA()
+    confintVec = [get_confint(rand(D, 100), ch, conf=alpha) for _ in 1:1e05]
+    @test isapprox(mean([confintVec[i][1] <= theta <= confintVec[i][2] for i in eachindex(confintVec)]), alpha, atol=0.02)
+
+    ch = signedEWMA()
+    confintVec = [get_confint(rand(D, 100), ch, conf=alpha) for _ in 1:1e05]
+    @test isapprox(mean([confintVec[i][1] <= theta <= confintVec[i][2] for i in eachindex(confintVec)]), alpha, atol=0.02)
+
+    ch = signedAEWMA(upw = false)
+    confintVec = [get_confint(rand(D, 100), ch, conf=alpha) for _ in 1:1e05]
+    @test isapprox(mean([confintVec[i][1] <= theta <= confintVec[i][2] for i in eachindex(confintVec)]), alpha, atol=0.02)
 end

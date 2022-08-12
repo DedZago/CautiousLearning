@@ -17,31 +17,30 @@ include(srcdir("update_parameter.jl"))
     theta = 5.0
     D = Poisson(theta)
     m = 50
-    ch = AEWMA(l=0.2, L=1.2)
+    ch = signedEWMA(l=0.2, L=0.8)
     um = CautiousLearning(ATS = 3)
     IC = [true, false]
-    delta = [-1.5, -1.25, -1.0, -0.75, -0.5, 0.5, 0.75, 1.0, 1.25, 1.5]
+    delta = [0.35, 0.5, 0.75, 1.0, 1.25, 1.5]
     tau = [1, 50]
     beta = 0.1
     Arl0 = 500
     ncond = 10000
     seed = 1234567
     maxrl = 10000
-    verbose = true
 end
 
 include(srcdir("simulate_runs.jl"))
 
 
 DrWatson.default_prefix(e::SimulationSettings) = "SimulationSettings"
-DrWatson.default_allowed(::SimulationSettings) = (Real, String, Distribution, UnivariateSeries, SelfStarting, FixedParameter, CautiousLearning)
-Base.string(::SelfStarting) = "SelfStarting"
+DrWatson.default_allowed(::SimulationSettings) = (Real, String, Distribution, UnivariateSeries, AdaptiveEstimator, FixedParameter, CautiousLearning)
+Base.string(::AdaptiveEstimator) = "AdaptiveEstimator"
 Base.string(::FixedParameter) = "FixedParameter"
 Base.string(um::CautiousLearning) = "CautiousLearning(ATS="* string(get_ATS(um))*")"
 Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 
 
-# umVec = [SelfStarting()]
-umVec = [FixedParameter(), SelfStarting(), CautiousLearning(ATS=5), CautiousLearning(ATS=3)]
-folder = "test500"
-config = [SimulationSettings(um = um, seed = 2022-08-09) for um in umVec]
+# umVec = [CautiousLearning(ATS=0)]
+umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0), CautiousLearning(ATS=5)]
+folder = "test-single-500"
+config = [SimulationSettings(um = um, seed = 2022-08-12) for um in umVec]

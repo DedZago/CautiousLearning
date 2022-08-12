@@ -2,6 +2,10 @@ function chart_statistic(x, thetaHat)
     return (x - thetaHat)/sqrt(thetaHat)
 end
 
+function chart_statistic(y, D::Distribution)
+    (y - mean(D)) / std(D)
+end
+
 function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=Int(1e04), seed = 123)
     # Random.seed!(seed)
     maxrl_i = Int(round(maxrl))
@@ -91,26 +95,27 @@ function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixe
         end
     end
     
-    if verbose println("saCL done.") end
+    if verbose println("SA done.") end
 
     return (h=hm, iter=i)
 end
 
 function GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma = 0.03, verbose=true, seed = Int(rand(1:1e06)))
-    #! Does not use seed because of conflicts
-    #! Cannot optimize on the same value of seed, need to find a better mechanism
-    CI = get_confint(yinit, conf = 1.0 - beta)
+    CI = get_confint(yinit, ch, conf = 1.0 - beta)
 
-    if verbose println("Calculating GICP for lower extremum...") end
-    Llow = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI[1]), m,
-                            verbose=false, Amin=0.1, maxiter=1e05, gamma=gamma, q=0.55, adjusted=true)
-
-    if verbose println("Calculating GICP for upper extremum...") end
-    Lup = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI[2]), m,
-                            verbose=false, Amin=0.1, maxiter=1e05, gamma=gamma, q=0.55, adjusted=true)
+    
+    Lvec = []
+    CI_valid = [th for th in CI if th != 0.0 && th != Inf]
+    for i in eachindex(CI_valid)
+        if verbose println("Calculating GICP for extremum " * string(i) * "/" * string(length(CI_valid)) * "...") end
+        L_th = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI_valid[i]), m,
+                                verbose=false, Amin=0.1, maxiter=1e05, gamma=gamma, q=0.55, adjusted=true)
+        push!(Lvec, L_th[:h])
+    end
     if verbose println("GICP done.") end
 
-    L = max(Llow[:h], Lup[:h])
+    #! Use abs.(Lvec) to consider both positive and negative control limits
+    L = maximum(abs.(Lvec))
     return L
 end
 
@@ -128,13 +133,18 @@ function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union
     rlIC = zeros(ncond)
     rlOC = [[zeros(ncond) for t in tau] for d in delta if false in IC]
     if isa(um, CautiousLearning)
-        # Estimate cautious learning limit
-        if verbose println("Calculating limits for target ATS...") end
         Ats0 = get_ATS(um)
-        sa_ats = saControlLimits(ch, SelfStarting(), runSimulation, Ats0, thetaHat, Poisson(thetaHat),
-                                m, verbose=false, Amin=0.1, maxiter=1e05,
-                                gamma=0.015, adjusted=true, seed=seed)
-        um = CautiousLearning(L = sa_ats[:h], ATS = Ats0)
+        if Ats0 != 0
+            # Calculate limit if Ats0 != 0, otherwise use zero-restarting chart
+            if verbose println("Calculating limits for target ATS...") end
+            sa_ats = saControlLimits(ch, AdaptiveEstimator(), runSimulation, Ats0, thetaHat, Poisson(thetaHat),
+                                    m, verbose=false, Amin=0.1, maxiter=1e05,
+                                    gamma=0.015, adjusted=true, seed=seed)
+            um = CautiousLearning(L = sa_ats[:h], ATS = Ats0)
+        else
+            if verbose println("ATS = 0, skipping limit calculation.") end
+        end
+        # Estimate cautious learning limit
     end
 
     if beta == false
@@ -199,28 +209,27 @@ end
 #     return dfOutput
 # end
 
-function runExperiment(config::SimulationSettings)
-    ncond   = config.ncond
-    ch      = config.ch
-    um      = config.um
-    D       = config.D
-    m       = config.m
-    Arl0    = config.Arl0
-    beta    = config.beta
-    IC      = config.IC
-    tau     = config.tau
-    delta   = config.delta
-    maxrl   = config.maxrl
-    verbose = config.verbose
-    simulation = config.simulation
+function runExperiment(cfg::SimulationSettings; verbose=true)
+    ncond   = cfg.ncond
+    ch      = cfg.ch
+    um      = cfg.um
+    D       = cfg.D
+    m       = cfg.m
+    Arl0    = cfg.Arl0
+    beta    = cfg.beta
+    IC      = cfg.IC
+    tau     = cfg.tau
+    delta   = cfg.delta
+    maxrl   = cfg.maxrl
+    simulation = cfg.simulation
     
-    seed    = config.seed + simulation
+    seed    = cfg.seed + simulation
     Random.seed!(seed)
     yinit = rand(D, m)
     out = runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0, beta=beta, IC=IC, delta=delta, tau=tau, verbose=verbose, maxrl=maxrl, seed=seed)
     if verbose println("Done.") end
     df = condSimToDf(out, tau, delta)
-    sim = [config.simulation for _ in 1:nrow(df)]
+    sim = [cfg.simulation for _ in 1:nrow(df)]
     df = hcat(sim, df)
     rename!(df, :x1 => :sim)
     return df

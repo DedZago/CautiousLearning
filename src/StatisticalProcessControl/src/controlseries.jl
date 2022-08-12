@@ -5,7 +5,15 @@ function check_IC(ch::CC) where CC <: DoubleSidedUnivariateSeries
     return -ch.L <= ch.C <= ch.L
 end
 
-function check_OC(ch::CC) where CC <: DoubleSidedUnivariateSeries
+function check_IC(ch::CC) where CC <: OneSidedUnivariateSeries
+    if ch.upw
+        return ch.C <= ch.L
+    else
+        return ch.C >= ch.L
+    end
+end
+
+function check_OC(ch::CC) where CC <: UnivariateSeries
     return !check_IC(ch)
 end
 
@@ -13,15 +21,6 @@ end
     l::Float64 = 0.1
     L::Float64 = 0.0
     C::Float64 = 0.0
-    # function EWMA(l::Float64, L::Vector{Float64})
-    #     if l <= 0
-    #         throw(DomainError(l, "Parameter should be positive"))
-    #     elseif first(L) <= 0
-    #         throw(DomainError(L, "Control limit should be positive"))
-    #     else
-    #         new(l, L)
-    #     end#if
-    # end#constructor
 end
 
 get_params(ch::EWMA) = @NamedTuple{l::Float64, L::Float64}((ch.l, ch.L))
@@ -33,14 +32,29 @@ end
 
 update_series(ch::EWMA, x) = EWMA(ch; C = update_value(ch, x))
 
-@with_kw struct AEWMA <: DoubleSidedUnivariateSeries
+@with_kw struct signedEWMA <: OneSidedUnivariateSeries
     l::Float64 = 0.1
-    k::Float64 = 3.0
+    upw::Bool  = true
     L::Float64 = 0.0
     C::Float64 = 0.0
 end
 
-get_params(ch::AEWMA) = @NamedTuple{l::Float64, k::Float64, L::Float64}((ch.l, ch.k, ch.L))
+get_params(ch::signedEWMA) = @NamedTuple{l::Float64, upw::Bool, L::Float64}((ch.l, ch.upw, ch.L))
+get_value(ch::signedEWMA) = ch.C
+
+function update_value(ch::signedEWMA, x)
+    if ch.upw
+        return max(0.0, (1.0 - ch.l) * get_value(ch) + ch.l * x)
+    else
+        return min(0.0, (1.0 - ch.l) * get_value(ch) + ch.l * x)
+    end
+end
+
+update_series(ch::signedEWMA, x) = signedEWMA(ch; C = update_value(ch, x))
+
+##########################################################
+#                       AEWMA                            #
+##########################################################
 
 # Default use Huber loss function
 function huber(e, l, k)
@@ -53,12 +67,43 @@ function huber(e, l, k)
     end
 end
 
+@with_kw struct AEWMA <: DoubleSidedUnivariateSeries
+    l::Float64 = 0.1
+    k::Float64 = 3.0
+    L::Float64 = 0.0
+    C::Float64 = 0.0
+end
+
+get_params(ch::AEWMA) = @NamedTuple{l::Float64, k::Float64, L::Float64}((ch.l, ch.k, ch.L))
+
 function update_value(ch::AEWMA, x)
     e = x - get_value(ch)
     return get_value(ch) + huber(e, ch.l, ch.k)
 end
 
 update_series(ch::AEWMA, x) = AEWMA(ch; C = update_value(ch, x))
+
+@with_kw struct signedAEWMA <: OneSidedUnivariateSeries
+    l::Float64 = 0.1
+    k::Float64 = 3.0
+    upw::Bool = true
+    L::Float64 = 0.0
+    C::Float64 = 0.0
+end
+
+get_params(ch::signedAEWMA) = @NamedTuple{l::Float64, k::Float64, upw::Bool, L::Float64}((ch.l, ch.k, ch.upw, ch.L))
+
+function update_value(ch::signedAEWMA, x)
+    e = x - get_value(ch)
+    if ch.upw
+        return max(0.0, get_value(ch) + huber(e, ch.l, ch.k))
+    else
+        return min(0.0, get_value(ch) + huber(e, ch.l, ch.k))
+    end
+end
+
+update_series(ch::signedAEWMA, x) = signedAEWMA(ch; C = update_value(ch, x))
+
 #######################################################################
 #                           Application                               #
 #######################################################################

@@ -29,6 +29,7 @@ current_thread = parsed_args["current_thread"]
 
 println("Sourcing configuration...")
 include(srcdir("cfg.jl"))
+verbose = true
 
 println("Starting simulations...")
 for cfg in config
@@ -39,7 +40,7 @@ for cfg in config
         if isfile(svname)
             continue
         else
-            out = runExperiment(cfg_thread)
+            out = runExperiment(cfg_thread, verbose=verbose)
 
             sv = @strdict config = cfg_thread out
             safesave(svname, sv)

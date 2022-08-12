@@ -1,4 +1,6 @@
 using Distributions
+using StatisticalProcessControl
+
 # Update Poisson/Binomial mean for each data point
 update_parameter(thetaHat, y, t) = thetaHat + (y - thetaHat) / t
 
@@ -14,8 +16,3 @@ end
 function update_parameter(thetaHat, y, t, ::Bernoulli)
     thetaHat + (y - thetaHat) / t
 end
-
-function chart_statistic(y, D::Distribution)
-    (y - mean(D)) / std(D)
-end
-

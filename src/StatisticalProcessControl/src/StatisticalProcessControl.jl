@@ -3,8 +3,10 @@ module StatisticalProcessControl
 using Parameters
 
 export UnivariateSeries,
-        SingleSidedUnivariateSeries,
+        OneSidedUnivariateSeries,
         DoubleSidedUnivariateSeries,
+        signedEWMA,
+        signedAEWMA,
         EWMA,
         AEWMA,
         get_params,
@@ -17,7 +19,7 @@ export UnivariateSeries,
         apply_series,
         CautiousLearning,
         FixedParameter,
-        SelfStarting,
+        AdaptiveEstimator,
         get_ATS,
         check_update,
         get_warning_limit,
@@ -28,7 +30,7 @@ abstract type AbstractSeries end
 
 abstract type UnivariateSeries <: AbstractSeries end
 
-abstract type SingleSidedUnivariateSeries <: UnivariateSeries end
+abstract type OneSidedUnivariateSeries <: UnivariateSeries end
 abstract type DoubleSidedUnivariateSeries <: UnivariateSeries end
 # Write your package code here.
 
