@@ -70,8 +70,3 @@ for cfg in config
     safesave(datadir("sims", folder, "output", "output.jld2"), @strdict df)
 end
 
-CARL0 = mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == 0.0)
-Arl0 = 200
-mean(CARL0 .<= Arl0)
-
-# CARL1 = mean(mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == 1.0 && df.tau[i] == 1))
