@@ -3,7 +3,7 @@ function chart_statistic(x, thetaHat)
 end
 
 function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=Int(1e04), seed = 123)
-    Random.seed!(seed)
+    # Random.seed!(seed)
     maxrl_i = Int(round(maxrl))
     thetaHatVec = zeros(maxrl_i)
     thetaHatVec[1] = thetaHat
@@ -38,7 +38,8 @@ function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=
 
     end
 
-    return @NamedTuple{t_alarm::Int64, chart_values::Vector{Float64}, limit_alarm::Float64, limit_cautious::Float64, parameter_updates::Vector{Float64}, di::Vector{Int64}}((t_alarm = i, chart_values = valueVec[1:i], limit_alarm = get_limits(ch), limit_cautious = get_warning_limit(um), parameter_updates = thetaHatCautVec[1:i], di = diVec[1:i]))
+    # return @NamedTuple{t_alarm::Int64, chart_values::Vector{Float64}, limit_alarm::Float64, limit_cautious::Float64, parameter_updates::Vector{Float64}, di::Vector{Int64}}((t_alarm = i, chart_values = valueVec[1:i], limit_alarm = get_limits(ch), limit_cautious = get_warning_limit(um), parameter_updates = thetaHatCautVec[1:i], di = diVec[1:i]))
+    return @NamedTuple{t_alarm::Int64}((t_alarm = i, ))
 
 end
 
@@ -95,24 +96,26 @@ function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixe
     return (h=hm, iter=i)
 end
 
-function GICP(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, verbose=true, seed = Int(rand(1:1e06)))
+function GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma = 0.03, verbose=true, seed = Int(rand(1:1e06)))
+    #! Does not use seed because of conflicts
+    #! Cannot optimize on the same value of seed, need to find a better mechanism
     CI = get_confint(yinit, conf = 1.0 - beta)
 
     if verbose println("Calculating GICP for lower extremum...") end
     Llow = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI[1]), m,
-                            verbose=false, Amin=0.1, maxiter=1e05, gamma=0.03, q=0.7, adjusted=true, seed=seed)
+                            verbose=false, Amin=0.1, maxiter=1e05, gamma=gamma, q=0.55, adjusted=true)
 
     if verbose println("Calculating GICP for upper extremum...") end
     Lup = saControlLimits(ch, um, runSimulation, Arl0, thetaHat, Poisson(CI[2]), m,
-                            verbose=false, Amin=0.1, maxiter=1e05, gamma=0.03, q=0.7, adjusted=true, seed=seed)
+                            verbose=false, Amin=0.1, maxiter=1e05, gamma=gamma, q=0.55, adjusted=true)
     if verbose println("GICP done.") end
 
     L = max(Llow[:h], Lup[:h])
     return L
 end
 
-function adjust_chart_gicp(ch::C, um, yinit, thetaHat, runSimulation, D, m, Arl0; beta = 0.2, verbose=true, seed = Int(rand(1:1e06))) where C <: UnivariateSeries
-    L = GICP(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0, beta = beta, verbose = verbose, seed=seed)
+function adjust_chart_gicp(ch::C, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma=0.03, verbose=true, seed = Int(rand(1:1e06))) where C <: UnivariateSeries
+    L = GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta = beta, gamma=gamma, verbose = verbose, seed=seed)
     return typeof(ch)(ch, L = L)
 end
 
@@ -128,16 +131,16 @@ function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union
         # Estimate cautious learning limit
         if verbose println("Calculating limits for target ATS...") end
         Ats0 = get_ATS(um)
-        sa_ats = saControlLimits(ch, um, runSimulation, Ats0, thetaHat, D,
+        sa_ats = saControlLimits(ch, SelfStarting(), runSimulation, Ats0, thetaHat, Poisson(thetaHat),
                                 m, verbose=false, Amin=0.1, maxiter=1e05,
-                                gamma=0.03, adjusted=true, seed=seed)
+                                gamma=0.015, adjusted=true, seed=seed)
         um = CautiousLearning(L = sa_ats[:h], ATS = Ats0)
     end
 
     if beta == false
         chart = deepcopy(ch)
     else
-        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, D, m, Arl0, beta=beta, verbose=verbose, seed=seed + 1)
+        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta=beta, verbose=verbose, seed=seed + 1)
     end
     
     if verbose println("Simulating run lengths...") end
@@ -209,16 +212,15 @@ function runExperiment(config::SimulationSettings)
     delta   = config.delta
     maxrl   = config.maxrl
     verbose = config.verbose
-    seed    = config.seed
-
     simulation = config.simulation
-
-    Random.seed!(seed + simulation)
+    
+    seed    = config.seed + simulation
+    Random.seed!(seed)
     yinit = rand(D, m)
     out = runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0, beta=beta, IC=IC, delta=delta, tau=tau, verbose=verbose, maxrl=maxrl, seed=seed)
     if verbose println("Done.") end
     df = condSimToDf(out, tau, delta)
-    sim = [cfg.simulation for _ in 1:nrow(df)]
+    sim = [config.simulation for _ in 1:nrow(df)]
     df = hcat(sim, df)
     rename!(df, :x1 => :sim)
     return df

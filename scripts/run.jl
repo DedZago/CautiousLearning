@@ -1,8 +1,9 @@
+println("Activating environment...")
 using DrWatson
 @quickactivate "CautiousLearning"
 
-using ArgParse
-using ProgressMeter
+println("Loading args...")
+using ArgParse, ProgressMeter
 # Add command line arguments
 function parse_commandline()
     s = ArgParseSettings()
@@ -25,22 +26,23 @@ parsed_args = parse_commandline()
 nsim_each = parsed_args["nsimulations_each"]
 current_thread = parsed_args["current_thread"]
 
+
+println("Sourcing configuration...")
 include(srcdir("cfg.jl"))
 
-umVec = [SelfStarting()]
-# umVec = [FixedParameter(), SelfStarting(), CautiousLearning(ATS=3)]
-config = [SimulationSettings(um = um, seed = 2022-08-10) for um in umVec]
+println("Starting simulations...")
 for cfg in config
     @showprogress for i in 1:nsim_each
-        cfg_thread = SimulationSettings(cfg, simulation = i + (current_thread-1) * nsim_each)
-        svname = datadir("sims", "test", savename(cfg_thread, "jld2"))
+        sleep(0.5)
+        cfg_thread = SimulationSettings(cfg, simulation = i + (current_thread-1) * nsim_each, verbose=false)
+        svname = datadir("sims", folder, string(cfg.um), savename(cfg_thread, "jld2"))
         if isfile(svname)
             continue
         else
             out = runExperiment(cfg_thread)
 
             sv = @strdict config = cfg_thread out
-            safesave(datadir("sims", "test", savename(cfg, "jld2")), sv)
+            safesave(svname, sv)
             GC.gc()
         end
     end
