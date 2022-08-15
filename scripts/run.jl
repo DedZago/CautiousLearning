@@ -29,11 +29,12 @@ current_thread = parsed_args["current_thread"]
 
 println("Sourcing configuration...")
 include(srcdir("cfg.jl"))
-verbose = true
+verbose = false
 
 println("Starting simulations...")
 for cfg in config
-    println(cfg.um)
+    folder = "theta="*string(theta)*"_"*string(ch)
+    println("Starting ", cfg.um)
     @showprogress for i in 1:nsim_each
         sleep(0.5)
         cfg_thread = SimulationSettings(cfg, simulation = i + (current_thread-1) * nsim_each)

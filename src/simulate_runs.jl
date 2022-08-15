@@ -171,19 +171,19 @@ function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union
             end#for
         end#for
     end#if
-    return (IC = rlIC, OC = rlOC)
+    return (IC = rlIC, OC = rlOC, L = chart.L)
 end
 
 function condSimToDf(out, tau, delta)
     # Save everything as a dataframe
-    colnames = ["tau", "delta", "rl"]
+    colnames = ["tau", "delta", "rl", "L"]
     dfOutput = DataFrame([name => [] for name in colnames])
     rlIC = out[:IC]
-    push!(dfOutput, [0.0, 0.0, rlIC])
+    push!(dfOutput, [0.0, 0.0, rlIC, out[:L]])
     for t in eachindex(tau)
         for d in eachindex(delta)
             rlOC = out[:OC][d][t]
-            push!(dfOutput, [tau[t], delta[d], rlOC])
+            push!(dfOutput, [tau[t], delta[d], rlOC, out[:L]])
         end#for
     end#for
 
