@@ -41,7 +41,7 @@ Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 
 # umVec = [CautiousLearning(ATS=0)]
 umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
-ch = signedEWMA(l=0.033)
-theta = 1.0
+theta = 4.0
 D = Poisson(theta)
-config = [[SimulationSettings(ch = signedEWMA(l=0.033), D=D, um = um, seed = 2022-08-15) for um in umVec]; [SimulationSettings(ch = signedAEWMA(l=0.033, k=4.16), D=D, um = um, seed = 2022-08-15) for um in umVec]]
+config = [[SimulationSettings(ch = signedAEWMA(l=0.023, L=1.0), D=D, um = um, seed = 2022-08-16) for um in umVec]; [SimulationSettings(ch = signedAEWMA(l=0.023, k=7.74, L=0.5), D=D, um = um, seed = 2022-08-16) for um in umVec]]
+# config = [SimulationSettings(ch = signedAEWMA(l=0.23, k=7.74), D=D, um = um, seed = 2022-08-16) for um in umVec]

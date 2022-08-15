@@ -33,7 +33,7 @@ verbose = false
 
 println("Starting simulations...")
 for cfg in config
-    folder = "theta="*string(theta)*"_"*string(ch)
+    folder = "theta="*string(params(cfg.D)[1])*"_"*string(cfg.ch)
     println("Starting ", cfg.um)
     @showprogress for i in 1:nsim_each
         sleep(0.5)

@@ -2,7 +2,9 @@ using DrWatson
 @quickactivate "CautiousLearning"
 include(srcdir("cfg.jl"))
 
+
 function sims_to_dataframe(cfg)
+    folder = "theta="*string(params(cfg.D)[1])*"_"*string(cfg.ch)
     sims = collect_results(datadir("sims", folder, string(cfg.um)))
     df = deepcopy(sims.out[1])
     for i in 2:nrow(sims)
@@ -20,6 +22,9 @@ function sims_to_dataframe(cfg)
 end
 
 output = vcat([sims_to_dataframe(cfg) for cfg in config]...)
+
+cfg = config[1]
+folder = "theta="*string(params(cfg.D)[1])*"_"*string(cfg.ch)
 safesave(datadir("sims", folder, "output", "output.jld2"), @strdict output)
 
 using StatsPlots
