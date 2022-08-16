@@ -3,61 +3,72 @@ using DrWatson
 include(srcdir("cfg.jl"))
 
 
-function sims_to_dataframe(cfg)
-    folder = "theta="*string(params(cfg.D)[1])*"_"*string(cfg.ch)
-    sims = collect_results(datadir("sims", folder, string(cfg.um)))
-    df = deepcopy(sims.out[1])
-    for i in 2:nrow(sims)
-        append!(df, deepcopy(sims.out[i]))
+function sims_to_dataframe(folder)
+    df = DataFrame()
+    for folder_sims in filter(isdir, readdir(folder, join=true))
+        sims = collect_results(folder_sims)
+        vectorized_df = [deepcopy(sims.out[i]) for i in 1:nrow(sims)]
+        for n in fieldnames(typeof(sims.config[1]))
+            if !(string(n) in ["simulation", "D", "IC", "ncond", "verbose", "delta", "tau"])
+                for i in eachindex(vectorized_df)
+                    vectorized_df[i][!, n] = [string(getfield(sims.config[i], n)) for _ in 1:nrow(vectorized_df[i])]
+                end
+            end
+        end
+        merged_df = vcat(vectorized_df...)
+        append!(df, merged_df)
     end
     sort!(df, [:sim])
 
     #TODO: Append the configuration relative to each single simulation
-    for n in fieldnames(typeof(cfg))
-        if !(string(n) in ["simulation", "D", "IC", "ncond", "verbose", "delta", "tau"])
-            df[!, n] = [string(getfield(cfg, n)) for _ in 1:nrow(df)]
-        end
-    end
     return df
 end
 
-output = vcat([sims_to_dataframe(cfg) for cfg in config]...)
+overwrite = false
+for folder in filter(isdir, readdir(datadir("sims"), join=true))
+    if isdir(datadir("sims", folder, "output")) && !overwrite
+        continue
+    else
+        output = sims_to_dataframe(folder)
+        # output = vcat([sims_to_dataframe(folder) for cfg in config[1:3]]...)
+        output.ARL = [mean(output.rl[i]) for i in 1:nrow(output)]
+        output.SDRL = [std(output.rl[i]) for i in 1:nrow(output)]
+        safesave(datadir("sims", folder, "output", "output.jld2"), @strdict output)
 
-cfg = config[1]
-folder = "theta="*string(params(cfg.D)[1])*"_"*string(cfg.ch)
-safesave(datadir("sims", folder, "output", "output.jld2"), @strdict output)
+        using CSV
+        output_R = output[:, Not(:rl)]
+        CSV.write(datadir("sims", folder, "output", "output_R.csv"), output_R)
 
-using StatsPlots
-# Safesave plots image
-DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
+        using StatsPlots
+        # Safesave plots image
+        DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
 
-p1 = boxplot()
-# p2 = boxplot()
-hline!([parse(Int, output.Arl0[1])], style=:dash, label=false)
-for um in unique(output.um)
-    df = output[output.um .== um, :]
-    CARL = [mean(df.rl[i]) for i in 1:nrow(df) if df.delta[i] == 0.0 && df.tau[i] == 0.0]
-    boxplot!(p1, CARL, label=um, outliers=false)
-
-    # CPerf = mean(df.rl[i] .>= df.Arl0[i] for i in 1:nrow(df) if df.delta[i] == 0.0 && df.tau[i] == 0.0)
-    # boxplot!(p2, CPerf, label=um, outliers=false)
-end
-safesave(datadir("sims", folder, "output", "CARL0.png"), p1)
-
-delta_performance = 500 * 0.02
-for d in unique(output.delta)[2:end]
-    for t in unique(output.tau)[2:end]
-        p = boxplot()
-        hline!([t], style=:dash, label=false)
+        p1 = boxplot()
+        hline!(p1, [parse(Int, output.Arl0[1])], style=:dash, label=false)
         for um in unique(output.um)
-            df = output[output.um .== um, :]
-            CARL = [mean(df.rl[i]) for i in 1:nrow(df) if df.delta[i] == d && df.tau[i] == t]
-            boxplot!(p, CARL, label=um, outliers=false)
+            df = output[output.um .== um .&& output.delta .== 0.0 .&& output.tau .== 0.0, :]
+            # CARL = [mean(df.rl[i]) for i in 1:nrow(df) if df.delta[i] == 0.0 && df.tau[i] == 0.0]
+            boxplot!(p1, df.ARL, label=um, outliers=false)
+            println("mean(df.ARL .<= df.ARL0: ", mean(df.ARL .<= parse.(Int, df.Arl0)))
         end
-        name = "CARL_tau=" * string(t) * "_delta=" * string(d) * ".png"
-        safesave(datadir("sims", folder, "output", name), p)
+        safesave(datadir("sims", folder, "output", "CARL0.png"), p1)
+
+        for d in unique(output.delta)[2:end]
+            for t in unique(output.tau)[2:end]
+                p = boxplot()
+                hline!([t], style=:dash, label=false)
+                for um in unique(output.um)
+                    df = output[output.um .== um .&& output.delta .== d .&& output.tau .== t, :]
+                    boxplot!(p, df.ARL, label=um, outliers=false)
+                end
+                name = "CARL_tau=" * string(t) * "_delta=" * string(d) * ".png"
+                safesave(datadir("sims", folder, "output", name), p)
+            end
+        end
     end
+
 end
+
 
 # for cfg in config
 #     CARL = mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == 0.0 && df.tau[i] == 0.0)
