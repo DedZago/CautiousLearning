@@ -19,22 +19,19 @@ compute_summary_IC = function(dat){
 }
 
 compute_summary_OC = function(dat){
-    out = aggregate(dat$ARL, list("Type" = dat$um, "delta"=dat$delta, "tau"=dat$tau), mean)
-    out = cbind(out, aggregate(dat$ARL, list("Type" = dat$um, "delta"=dat$delta, "tau"=dat$tau), sd)[, 4])
-    colnames(out) = c("Type", "delta", "tau", "AARL", "SDARL")
-
-
+    out = aggregate(dat$ARL, list("Type" = dat$um, "delta"=dat$delta, "tau"=dat$tau), summary)
+    colnames(out) = c("Type", "delta", "tau", "")
     # rearrange
-    out = out[, c(3, 2, 1, 4, 5)]
-    vecBest = c()
-    uniquetypes = length(unique(out$Type))
-    for(i in 1:(NROW(out)/uniquetypes)){
-        idx = (i-1)*uniquetypes + 1:3
-        best = (i-1)*uniquetypes + which.min(out$AARL[idx])
-        vecBest = c(vecBest, idx == best)
-    }
-    out$AARL = round(out$AARL, 2)
-    out$AARL = cell_spec(out$AARL, bold = vecBest, format="latex")
+    out = cbind(out[, c(3, 2, 1)], out[, 4])
+    # vecBest = c()
+    # uniquetypes = length(unique(out$Type))
+    # for(i in 1:(NROW(out)/uniquetypes)){
+    #     idx = (i-1)*uniquetypes + 1:3
+    #     best = (i-1)*uniquetypes + which.min(out$AARL[idx])
+    #     vecBest = c(vecBest, idx == best)
+    # }
+    # out$AARL = round(out$AARL, 2)
+    # out$AARL = cell_spec(out$AARL, bold = vecBest, format="latex")
 
     tex_OC <- kable(out, format="latex", booktabs=TRUE, digits = 2, row.names=FALSE, escape=FALSE, align='c', linesep = "",
         caption = "Summary of the out-of-control performance of the control chart using the fixed-parameter, adaptive estimator, and the proposed cautious learning update rules."
