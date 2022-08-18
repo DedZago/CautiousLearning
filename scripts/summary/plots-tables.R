@@ -43,6 +43,8 @@ compute_summary_OC = function(dat){
 }
 
 
+library(ggplot2)
+library(ggformula)
 # Load data and create the same boxplot as in Capizzi and Masarotto (2020)
 setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
 for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names=TRUE)){
@@ -52,6 +54,15 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
         dat = read.csv(outputFile)
         IC = dat[dat$tau == 0, ]
         tabIC = compute_summary_IC(IC)
+
+        p = ggplot(IC, aes(x = L, group = um)) +
+            geom_density(aes(y = ..scaled.., fill=um), alpha=0.3) + 
+            theme_bw() + 
+            guides(fill=guide_legend(title=NULL))
+
+        ggsave(paste0(outputFolder, "/limits.png"), p)
+
+        # Boxplot ARL results
         png(paste0(outputFolder, "/IC.png"))
         boxplot(ARL ~ um, data=IC, xlab="", names=rep(c("AE", "CL", "FP"), 1), outline=FALSE)
         abline(h = IC$Arl0[1], lty="dashed")
