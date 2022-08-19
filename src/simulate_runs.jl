@@ -236,3 +236,37 @@ function runExperiment(cfg::SimulationSettings; verbose=true)
     rename!(df, :x1 => :sim)
     return df
 end
+
+function runExperiment(res::Dict{String, Any}, delta; verbose=true)
+    res_cp = deepcopy(res)
+    cfg = res_cp["config"]
+    out = res_cp["out"]
+    ncond   = cfg.ncond
+    ch      = cfg.ch
+    um      = cfg.um
+    D       = cfg.D
+    m       = cfg.m
+    Arl0    = cfg.Arl0
+    beta    = cfg.beta
+    IC      = cfg.IC
+    maxrl   = cfg.maxrl
+    simulation = cfg.simulation
+        
+    # Set simulation seed
+    Random.seed!(cfg.seed + simulation)
+
+    seed = rand(Uniform(1, 1e08))
+    yinit = rand(D, m)
+    thetaHat = mean(yinit)
+    L = out.L[1]
+    tau = unique(out.tau)
+    tau = tau[tau .!= 0.0]
+    for d in delta
+        for t in tau
+            rl = [runSimulation(typeof(ch)(ch, L=L), um, thetaHat, Poisson(thetaHat), length(yinit), IC=false, tau=t, delta=d)[:t_alarm] for _ in 1:ncond]
+            tmp = [out.sim[1], t, d, rl, L]
+            push!(out, tmp)
+        end
+    end
+    out
+end

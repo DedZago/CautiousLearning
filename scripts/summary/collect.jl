@@ -6,6 +6,9 @@ include(srcdir("cfg.jl"))
 function sims_to_dataframe(folder)
     df = DataFrame()
     for folder_sims in filter(isdir, readdir(folder, join=true))
+        if basename(folder_sims) == "output"
+            continue
+        end
         sims = collect_results(folder_sims)
         vectorized_df = [deepcopy(sims.out[i]) for i in 1:nrow(sims)]
         for n in fieldnames(typeof(sims.config[1]))

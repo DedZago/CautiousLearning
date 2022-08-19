@@ -9,9 +9,9 @@ compute_summary_IC = function(dat){
     out = aggregate(dat$ARL, list("Type" = dat$um), mean)
     out = cbind(out, aggregate(dat$ARL, list("Type" = dat$um), sd)[, 2])
     out = cbind(out, aggregate(dat$ARL, list("Type" = dat$um), function(x) mean(x <= dat$Arl0[1]))[, 2])
-    colnames(out) = c("Type", "AARL", "SDARL", "$\\text{Pr}(ARL \\leq ARL0)$")
+    colnames(out) = c("Type", "AARL", "SDARL", "$\\text{Pr}(\\text{ARL}_0 \\leq \\text{a})$")
 
-    tex_IC <- kable(out, format="latex", booktabs=TRUE, digits = 1, row.names=FALSE, escape=FALSE, align='c', linesep = "",
+    tex_IC <- kable(out, format="latex", booktabs=TRUE, digits = 2, row.names=FALSE, escape=FALSE, align='c', linesep = "",
         caption = "Summary of the in-control performance of the control chart using the fixed-parameter, adaptive estimator, and the proposed cautious learning update rules."
     ) %>%
         kable_styling(latex_options = "hold_position")
@@ -48,8 +48,9 @@ library(ggformula)
 # Load data and create the same boxplot as in Capizzi and Masarotto (2020)
 setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
 for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names=TRUE)){
-    outputFolder = paste0(sims_folder, "/output")
-    outputFile = paste0(outputFolder, "/output_R.csv")
+    outputFile = paste0(sims_folder, "/output/output_R.csv")
+    outputFolder = paste0("plots/sims/", basename(sims_folder))
+    dir.create(outputFolder, showWarnings = FALSE)
     if(file.exists(outputFile)){
         dat = read.csv(outputFile)
         IC = dat[dat$tau == 0, ]
@@ -57,7 +58,9 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
 
         p = ggplot(IC, aes(x = L, group = um)) +
             geom_density(aes(y = ..scaled.., fill=um), alpha=0.3) + 
+            scale_x_continuous(expand = expansion(mult=0.05)) +
             theme_bw() + 
+            theme(legend.position="top")+
             guides(fill=guide_legend(title=NULL))
 
         ggsave(paste0(outputFolder, "/limits.png"), p)
@@ -71,16 +74,18 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
 
         OC = dat[dat$tau != 0, ]
         for(d in unique(OC$delta)){
-            png(paste0(outputFolder, "/delta=", sprintf("%.2f", d), ".png"))
             subdf = OC[OC$delta == d, ]
-            max_y = max(aggregate(subdf$ARL, list("Type" = subdf$um, "tau" = subdf$tau), function(x) quantile(x, 0.95))$x)
-            vertical_offset = 10
+            # Get limits for the boxplot
+            tmp = boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), outline=FALSE, plot=FALSE)
+            max_y = max(tmp$stats)
+            vertical_offset = 0.10*max_y
             top_position = max_y + vertical_offset
             num_up = length(unique(subdf$um))
             num_tau = length(unique(subdf$tau))
+            png(paste0(outputFolder, "/delta=", sprintf("%.2f", d), ".png"))
             boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), outline=FALSE, ylim = c(1, top_position))
             abline(v = 0.5 + num_up*(2:num_tau-1), lty="dashed")
-            text(x = 2 + num_up*(1:num_tau-1), y = max_y + 0.5*vertical_offset, parse(text = paste0("tau ==", unique(OC$tau))))
+            text(x = 2 + num_up*(1:num_tau-1), y = max_y + 0.75*vertical_offset, parse(text = paste0("tau ==", unique(OC$tau))))
             dev.off()
         }
         tabOC = compute_summary_OC(OC)
