@@ -4,7 +4,7 @@ include(srcdir("cfg.jl"))
 
 @testset "Run experiment" begin
     ch = signedAEWMA(L=0.5)
-    cfg = SimulationSettings(ch=ch, ncond=10, Arl0=5, um=CautiousLearning(ATS=0), seed=2022-08-12)
+    cfg = SimulationSettings(ch=ch, ncond=10, Arl0=50, um=CautiousLearning(ATS=0), seed=2022-08-23)
     ncond   = cfg.ncond
     ch      = cfg.ch
     um      = cfg.um
@@ -21,21 +21,20 @@ include(srcdir("cfg.jl"))
     # Set simulation seed
     Random.seed!(cfg.seed + simulation)
 
-    seed = rand(Uniform(1, 1e08))
     yinit = rand(D, m)
     thetaHat = mean(yinit)
     @testset "RunSimulation" begin
-        icRun = runSimulation(ch, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl, seed=seed)
+        icRun = runSimulation(ch, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl)
         @test isa(icRun, NamedTuple{(:t_alarm,), Tuple{Int64}})
-        @test icRun[:t_alarm] == 108
+        @test icRun[:t_alarm] == 105
     end
     
-    @testset "RunExperiment" begin
-        out = runExperiment(cfg, verbose=true)
-        deltas = unique(out.delta)
-        taus = unique(out.tau)
-        @test 0.0 in deltas
-        @test 0.0 in taus
+    @testset "RunGICP" begin
+        out = runGICP(cfg, verbose=true)
+    end
+
+    @testset "RunGICP" begin
+        res = runConditionalSimulations(out, verbose=true)
     end
 end
 

@@ -6,8 +6,7 @@ function chart_statistic(y, D::Distribution)
     (y - mean(D)) / std(D)
 end
 
-function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=Int(1e04), seed = 123)
-    # Random.seed!(seed)
+function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=Int(1e04))
     maxrl_i = Int(round(maxrl))
     thetaHatVec = zeros(maxrl_i)
     thetaHatVec[1] = thetaHat
@@ -55,7 +54,7 @@ Computes the control limit for a control chart `ch` with update mechanism `um` s
 
 Setting `adjusted = false` ensures that E[RL] >= Arl0.
 """
-function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixed=500, Afixed=0.1, Amin=0.1, Amax=100, delta=0.1, q=0.55, gamma=0.02, Nmin=1000, z = 3.0, Cmrl=10.0, maxiter = 4e05, verbose=true, eps = 1e-04, adjusted=false, seed = Int(rand(1:1e06)))
+function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixed=500, Afixed=0.1, Amin=0.1, Amax=100, delta=0.1, q=0.55, gamma=0.02, Nmin=1000, z = 3.0, Cmrl=10.0, maxiter = 4e05, verbose=true, eps = 1e-04, adjusted=false)
     v = (z/gamma)^2
     sm = 0.0
     sp = 0.0
@@ -82,7 +81,7 @@ function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixe
         end
         i += 1
         ch_temp = typeof(ch)(ch, L = h)                # Copy chart ch with hstart as control limit
-        rl = rlsim(ch_temp, um, thetaHat, Dist, m, IC=true, maxrl = Int(round(Cmrl * Arl0 * sqrt(i + Nfixed))), seed=seed)[:t_alarm]
+        rl = rlsim(ch_temp, um, thetaHat, Dist, m, IC=true, maxrl = Int(round(Cmrl * Arl0 * sqrt(i + Nfixed))))[:t_alarm]
         score = (rl - Arl0)/Arl0
 
         h = max(eps, h - D * score / (i^q))
@@ -100,7 +99,7 @@ function saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; Nfixe
     return (h=hm, iter=i)
 end
 
-function GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma = 0.03, verbose=true, seed = Int(rand(1:1e06)))
+function GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma = 0.03, verbose=true)
     CI = get_confint(yinit, ch, conf = 1.0 - beta)
 
     
@@ -119,8 +118,8 @@ function GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma
     return L
 end
 
-function adjust_chart_gicp(ch::C, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma=0.03, verbose=true, seed = Int(rand(1:1e06))) where C <: UnivariateSeries
-    L = GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta = beta, gamma=gamma, verbose = verbose, seed=seed)
+function adjust_chart_gicp(ch::C, um, yinit, thetaHat, runSimulation, m, Arl0; beta = 0.2, gamma=0.03, verbose=true) where C <: UnivariateSeries
+    L = GICP(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta = beta, gamma=gamma, verbose = verbose)
     return typeof(ch)(ch, L = L)
 end
 
@@ -128,10 +127,8 @@ function extract_statistics(conditionalRun)
     return [cr[:t_alarm] for cr in conditionalRun]
 end
 
-function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
+function computeGICP(yinit, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, verbose=true)
     thetaHat = mean(yinit)
-    rlIC = zeros(ncond)
-    rlOC = [[zeros(ncond) for t in tau] for d in delta if false in IC]
     if isa(um, CautiousLearning)
         Ats0 = get_ATS(um)
         if Ats0 != 0
@@ -139,7 +136,7 @@ function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union
             if verbose println("Calculating limits for target ATS...") end
             sa_ats = saControlLimits(ch, AdaptiveEstimator(), runSimulation, Ats0, thetaHat, Poisson(thetaHat),
                                     m, verbose=false, Amin=0.1, maxiter=1e05,
-                                    gamma=0.015, adjusted=true, seed=seed)
+                                    gamma=0.015, adjusted=true)
             um = CautiousLearning(L = sa_ats[:h], ATS = Ats0)
         else
             if verbose println("ATS = 0, skipping limit calculation.") end
@@ -150,13 +147,56 @@ function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union
     if beta == false
         chart = deepcopy(ch)
     else
-        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta=beta, verbose=verbose, seed=seed + 1)
+        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta=beta, verbose=verbose)
     end
+    
+    return (thetaHat = thetaHat, m = m, L = chart.L, um = um)
+end
+
+function runGICP(cfg::SimulationSettings; verbose=true)
+    ch      = cfg.ch
+    um      = cfg.um
+    D       = cfg.D
+    m       = cfg.m
+    Arl0    = cfg.Arl0
+    beta    = cfg.beta
+    simulation = cfg.simulation
+        
+    # Set simulation seed
+    Random.seed!(cfg.seed + simulation)
+    yinit = rand(D, m)
+    res = computeGICP(yinit, ch, um, D, m, Arl0; beta=beta, verbose=verbose)
+    if verbose println("Done.") end
+    return @strdict cfg res yinit
+end
+
+function runConditionalSimulations(GICPoutput; verbose=true)
+    cfg = deepcopy(GICPoutput["cfg"])
+    res = deepcopy(GICPoutput["res"])
+    ncond   = cfg.ncond
+    ch      = cfg.ch
+    D       = cfg.D
+    m       = cfg.m
+    IC      = cfg.IC
+    tau     = cfg.tau
+    delta   = cfg.delta
+    maxrl   = cfg.maxrl
+    simulation = cfg.simulation
+
+    L::Float64 = res.L
+    thetaHat::Float64 = res.thetaHat
+    m::Int = res.m
+    um = res.um
+    chart = typeof(ch)(ch, L = L)
+
+    rlIC = zeros(ncond)
+    rlOC = [[zeros(ncond) for t in tau] for d in delta if false in IC]
+
+    Random.seed!(cfg.seed + simulation + 1)
     
     if verbose println("Simulating run lengths...") end
     if true in IC
-        seed_offset = 2
-        icRun = [runSimulation(chart, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
+        icRun = [runSimulation(chart, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl) for _ in 1:ncond]
         output = extract_statistics(icRun)
         rlIC = output
     end
@@ -164,109 +204,33 @@ function runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0; beta::Union
     if false in IC
         for t in eachindex(tau)
             for d in eachindex(delta)
-                seed_offset = 2 + ncond + t*length(delta) + d
-                ocRun = [runSimulation(chart, um, thetaHat, D, m, IC=false, tau=tau[t], delta=delta[d], maxrl=maxrl, seed=seed+seed_offset+s) for s in 1:ncond]
+                ocRun = [runSimulation(chart, um, thetaHat, D, m, IC=false, tau=tau[t], delta=delta[d], maxrl=maxrl) for _ in 1:ncond]
                 output = extract_statistics(ocRun)
                 rlOC[d][t] = output
             end#for
         end#for
     end#if
-    return (IC = rlIC, OC = rlOC, L = chart.L)
+    out = (IC = rlIC, OC = rlOC, L = L, thetaHat = thetaHat, simulation = simulation, m=m)
+    df = condSimToDf(out, tau, delta, simulation)
+    return df
 end
 
-function condSimToDf(out, tau, delta)
+function condSimToDf(out, tau, delta, simulation)
     # Save everything as a dataframe
-    colnames = ["tau", "delta", "rl", "L"]
+    colnames = ["sim", "thetaHat", "tau", "delta", "rl", "L", "m"]
+    simulation = out[:simulation]
+    thetaHat = out[:thetaHat]
+    L = out[:L]
+    m = out[:m]
     dfOutput = DataFrame([name => [] for name in colnames])
     rlIC = out[:IC]
-    push!(dfOutput, [0.0, 0.0, rlIC, out[:L]])
+    push!(dfOutput, [simulation, thetaHat, 0.0, 0.0, rlIC, L, m])
     for t in eachindex(tau)
         for d in eachindex(delta)
             rlOC = out[:OC][d][t]
-            push!(dfOutput, [tau[t], delta[d], rlOC, out[:L]])
+            push!(dfOutput, [simulation, thetaHat, tau[t], delta[d], rlOC, L, m])
         end#for
     end#for
 
     return dfOutput
-end
-
-# function runNestedSimulations(ncond, yinit, ch, um, D, m, Arl0; beta::Union{Bool, Float64} = 0.2, IC=true, tau=1, delta=0.0, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
-#     nsim = length(yinit)
-
-#     out = pmap((i) -> runConditionalSimulation(yinit[i], ncond, ch, um ,D, m, Arl0, beta=beta, IC=IC, tau=tau, delta=delta, maxrl = maxrl, verbose=verbose, seed=seed+i), 1:length(yinit))
-
-#     colnames = ["tau", "delta", "rl"]
-#     dfOutput = DataFrame([name => [] for name in colnames])
-#     rlIC = permutedims(hcat([v[:IC] for v in out]...))
-#     push!(dfOutput, [0.0, 0.0, rlIC])
-#     for t in eachindex(tau)
-#         for d in eachindex(delta)
-#             rlOC = permutedims(hcat([v[:OC][d][t] for v in out]...))
-#             push!(dfOutput, [tau[t], delta[d], rlOC])
-#         end#for
-#     end#for
-
-#     return dfOutput
-# end
-
-function runExperiment(cfg::SimulationSettings; verbose=true)
-    ncond   = cfg.ncond
-    ch      = cfg.ch
-    um      = cfg.um
-    D       = cfg.D
-    m       = cfg.m
-    Arl0    = cfg.Arl0
-    beta    = cfg.beta
-    IC      = cfg.IC
-    tau     = cfg.tau
-    delta   = cfg.delta
-    maxrl   = cfg.maxrl
-    simulation = cfg.simulation
-        
-    # Set simulation seed
-    Random.seed!(cfg.seed + simulation)
-
-    seed = rand(Uniform(1, 1e08))
-    yinit = rand(D, m)
-    out = runConditionalSimulations(yinit, ncond, ch, um, D, m, Arl0, beta=beta, IC=IC, delta=delta, tau=tau, verbose=verbose, maxrl=maxrl, seed=seed)
-    if verbose println("Done.") end
-    df = condSimToDf(out, tau, delta)
-    sim = [cfg.simulation for _ in 1:nrow(df)]
-    df = hcat(sim, df)
-    rename!(df, :x1 => :sim)
-    return df
-end
-
-function runExperiment(res::Dict{String, Any}, delta; verbose=true)
-    res_cp = deepcopy(res)
-    cfg = res_cp["config"]
-    out = res_cp["out"]
-    ncond   = cfg.ncond
-    ch      = cfg.ch
-    um      = cfg.um
-    D       = cfg.D
-    m       = cfg.m
-    Arl0    = cfg.Arl0
-    beta    = cfg.beta
-    IC      = cfg.IC
-    maxrl   = cfg.maxrl
-    simulation = cfg.simulation
-        
-    # Set simulation seed
-    Random.seed!(cfg.seed + simulation)
-
-    seed = rand(Uniform(1, 1e08))
-    yinit = rand(D, m)
-    thetaHat = mean(yinit)
-    L = out.L[1]
-    tau = unique(out.tau)
-    tau = tau[tau .!= 0.0]
-    for d in delta
-        for t in tau
-            rl = [runSimulation(typeof(ch)(ch, L=L), um, thetaHat, Poisson(thetaHat), length(yinit), IC=false, tau=t, delta=d)[:t_alarm] for _ in 1:ncond]
-            tmp = [out.sim[1], t, d, rl, L]
-            push!(out, tmp)
-        end
-    end
-    out
 end
