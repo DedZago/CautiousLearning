@@ -2,14 +2,33 @@ using DrWatson
 @quickactivate "CautiousLearning"
 include(srcdir("cfg.jl"))
 
-
-function sims_to_dataframe(folder)
+function collect_limits(folder)
     df = DataFrame()
     for folder_sims in filter(isdir, readdir(folder, join=true))
         if basename(folder_sims) == "output"
             continue
         end
-        sims = collect_results(folder_sims)
+        sims = collect_results(folder_sims * "/limits")
+        ums = [string(sims.cfg[i].um) for i in 1:nrow(sims)]
+        simulations = [sims.cfg[i].simulation for i in 1:nrow(sims)]
+        thetas = [sims.res[i].thetaHat for i in 1:nrow(sims)]
+        lims = [sims.res[i].L for i in 1:nrow(sims)]
+        append!(df, DataFrame(hcat(ums, simulations, thetas, lims), [:um, :sim,:thetaHat, :L]))
+    end
+    sort!(df, [:sim])
+    return df
+end
+
+function sims_to_dataframe(folder)
+    df = DataFrame()
+    for folder_sims in filter(isdir, readdir(folder, join=true))
+        if basename(folder_sims) == "output" || !isdir(folder_sims * "/arls")
+            continue
+        end
+        sims = collect_results(folder_sims * "/arls")
+        if nrow(sims) == 0
+            continue
+        end
         vectorized_df = [deepcopy(sims.out[i]) for i in 1:nrow(sims)]
         for n in fieldnames(typeof(sims.config[1]))
             if !(string(n) in ["simulation", "D", "IC", "ncond", "verbose", "delta", "tau"])
@@ -27,75 +46,26 @@ function sims_to_dataframe(folder)
     return df
 end
 
-overwrite = false
+overwrite = true
+using CSV
+
 for folder in filter(isdir, readdir(datadir("sims"), join=true))
     if isdir(datadir("sims", folder, "output")) && !overwrite
         continue
     else
-        output = sims_to_dataframe(folder)
-        # output = vcat([sims_to_dataframe(folder) for cfg in config[1:3]]...)
-        output.ARL = [mean(output.rl[i]) for i in 1:nrow(output)]
-        output.SDRL = [std(output.rl[i]) for i in 1:nrow(output)]
-        safesave(datadir("sims", folder, "output", "output.jld2"), @strdict output)
-
-        using CSV
-        output_R = output[:, Not(:rl)]
-        CSV.write(datadir("sims", folder, "output", "output_R.csv"), output_R)
-
-        # using StatsPlots
-        # # Safesave plots image
-        # DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
-
-        # p1 = boxplot()
-        # hline!(p1, [parse(Int, output.Arl0[1])], style=:dash, label=false)
-        # for um in unique(output.um)
-        #     df = output[output.um .== um .&& output.delta .== 0.0 .&& output.tau .== 0.0, :]
-        #     # CARL = [mean(df.rl[i]) for i in 1:nrow(df) if df.delta[i] == 0.0 && df.tau[i] == 0.0]
-        #     boxplot!(p1, df.ARL, label=um, outliers=false)
-        #     println("mean(df.ARL .<= df.ARL0: ", mean(df.ARL .<= parse.(Int, df.Arl0)))
-        # end
-        # safesave(datadir("sims", folder, "output", "CARL0.png"), p1)
-
-        # for d in unique(output.delta)[2:end]
-        #     for t in unique(output.tau)[2:end]
-        #         p = boxplot()
-        #         hline!([t], style=:dash, label=false)
-        #         for um in unique(output.um)
-        #             df = output[output.um .== um .&& output.delta .== d .&& output.tau .== t, :]
-        #             boxplot!(p, df.ARL, label=um, outliers=false)
-        #         end
-        #         name = "CARL_tau=" * string(t) * "_delta=" * string(d) * ".png"
-        #         safesave(datadir("sims", folder, "output", name), p)
-        #     end
-        # end
+        output = collect_limits(folder)
+        safesave(datadir("sims", folder, "output", "limits.jld2"), @strdict output)
+        CSV.write(datadir("sims", folder, "output", "limits_R.csv"), output)
     end
-
 end
 
+for folder in filter(isdir, readdir(datadir("sims"), join=true))
+    output = sims_to_dataframe(folder)
+    # output = vcat([sims_to_dataframe(folder) for cfg in config[1:3]]...)
+    output.ARL = [mean(output.rl[i]) for i in 1:nrow(output)]
+    output.SDRL = [std(output.rl[i]) for i in 1:nrow(output)]
+    safesave(datadir("sims", folder, "output", "output.jld2"), @strdict output)
 
-# for cfg in config
-#     CARL = mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == 0.0 && df.tau[i] == 0.0)
-#     open(string(cfg.um),"a") do io
-#         println(io, "d: 0.0")
-#         println(io, "ave(CARL): ", mean(CARL))
-#         println(io, "std(CARL): ", std(CARL))
-#     end
-
-#     for d in unique(df.delta)[2:end]
-#         CARL = mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == d && df.tau[i] == 1)
-#         open(string(cfg.um),"a") do io
-#             println(io, "d: ", d)
-#             println(io, "ave(CARL): ", mean(CARL))
-#             println(io, "std(CARL): ", std(CARL))
-#         end
-#     end
-
-    
-#     safesave(datadir("sims", folder, "output", "output.jld2"), @strdict df)
-# end
-
-# CARL0 = mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == 0.0)
-# Arl0 = 200
-# mean(CARL0 .<= Arl0)
-
-# CARL1 = mean(mean(df.rl[i] for i in 1:nrow(df) if df.delta[i] == 1.0 && df.tau[i] == 1))
+    output_R = output[:, Not(:rl)]
+    CSV.write(datadir("sims", folder, "output", "output_R.csv"), output_R)
+end

@@ -44,19 +44,16 @@ compute_summary_OC = function(dat){
 
 
 library(ggplot2)
-library(ggformula)
 # Load data and create the same boxplot as in Capizzi and Masarotto (2020)
 setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
 for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names=TRUE)){
+    limitsFile = paste0(sims_folder, "/output/limits_R.csv")
     outputFile = paste0(sims_folder, "/output/output_R.csv")
     outputFolder = paste0("plots/sims/", basename(sims_folder))
-    dir.create(outputFolder, showWarnings = FALSE)
-    if(file.exists(outputFile)){
-        dat = read.csv(outputFile)
-        IC = dat[dat$tau == 0, ]
-        tabIC = compute_summary_IC(IC)
-
-        p = ggplot(IC, aes(x = L, group = um)) +
+    dir.create(outputFolder, recursive = FALSE, showWarnings = FALSE)
+    if(file.exists(limitsFile)){
+        limits = read.csv(limitsFile)
+        p = ggplot(limits, aes(x = L, group = um)) +
             geom_density(aes(y = ..scaled.., fill=um), alpha=0.3) + 
             scale_x_continuous(expand = expansion(mult=0.05)) +
             theme_bw() + 
@@ -64,9 +61,14 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
             guides(fill=guide_legend(title=NULL))
 
         ggsave(paste0(outputFolder, "/limits.png"), p)
+    }
 
+    if(file.exists(outputFile)){
+        dat = read.csv(outputFile)
         # Boxplot ARL results
         png(paste0(outputFolder, "/IC.png"))
+        IC = dat[dat$tau == 0, ]
+        tabIC = compute_summary_IC(IC)
         boxplot(ARL ~ um, data=IC, xlab="", names=rep(c("AE", "CL", "FP"), 1), outline=FALSE)
         abline(h = IC$Arl0[1], lty="dashed")
         dev.off()

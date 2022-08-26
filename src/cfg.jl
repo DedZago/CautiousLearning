@@ -42,6 +42,11 @@ Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 # umVec = [CautiousLearning(ATS=0)]
 umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
 seed = 2022-08-23
-config = [[SimulationSettings(ch = signedEWMA(l=0.033, L=1.0), D=Poisson(1.0), um = um, seed = seed) for um in umVec];
-            [SimulationSettings(ch = signedEWMA(l=0.230, L=1.0), D=Poisson(4.0), um = um, seed = seed+1) for um in umVec];
-            [SimulationSettings(ch = signedEWMA(l=0.0190, L=1.0), D=Poisson(7.0), um = um, seed = seed+2) for um in umVec];]
+config = [
+          [SimulationSettings(ch = signedEWMA(l=0.033, L=1.0), D=Poisson(1.0), um = um, seed = seed) for um in umVec];
+            [SimulationSettings(ch = signedEWMA(l=0.0230, L=1.0), D=Poisson(4.0), um = um, seed = seed+1) for um in umVec];
+            [SimulationSettings(ch = signedEWMA(l=0.0190, L=1.0), D=Poisson(7.0), um = um, seed = seed+2) for um in umVec];
+            [SimulationSettings(ch = signedAEWMA(l=0.033, k = 4.16, L=1.0), D=Poisson(1.0), um = um, seed = seed) for um in umVec];
+            [SimulationSettings(ch = signedAEWMA(l=0.0230, k = 7.7403, L=1.0), D=Poisson(4.0), um = um, seed = seed+1) for um in umVec];
+            [SimulationSettings(ch = signedAEWMA(l=0.0190, k = 9.7699, L=1.0), D=Poisson(7.0), um = um, seed = seed+2) for um in umVec];
+           ]

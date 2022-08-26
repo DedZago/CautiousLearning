@@ -15,7 +15,7 @@ for cfg in config
         if isfile(svname)
             continue
         else
-            sv = runGICP(cfg, verbose=false)
+            sv = runGICP(cfg_thread, verbose=false)
             safesave(svname, sv)
             GC.gc()
         end
