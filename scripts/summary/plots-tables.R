@@ -2,6 +2,7 @@ library(knitr)
 library(kableExtra)
 library(broom)
 library(stringr)
+library(scales)
 options(knitr.table.NA = '-')
 
 compute_summary_IC = function(dat){
@@ -44,6 +45,7 @@ compute_summary_OC = function(dat){
 
 
 library(ggplot2)
+transp = 0.3
 # Load data and create the same boxplot as in Capizzi and Masarotto (2020)
 setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
 for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names=TRUE)){
@@ -54,7 +56,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
     if(file.exists(limitsFile)){
         limits = read.csv(limitsFile)
         p = ggplot(limits, aes(x = L, group = um)) +
-            geom_density(aes(y = ..scaled.., fill=um), alpha=0.3) + 
+            geom_density(aes(y = ..scaled.., fill=um), alpha=transp) + 
             scale_x_continuous(expand = expansion(mult=0.05)) +
             theme_bw() + 
             theme(legend.position="top")+
@@ -69,7 +71,8 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
         png(paste0(outputFolder, "/IC.png"))
         IC = dat[dat$tau == 0, ]
         tabIC = compute_summary_IC(IC)
-        boxplot(ARL ~ um, data=IC, xlab="", names=rep(c("AE", "CL", "FP"), 1), outline=FALSE)
+        colour = alpha(hue_pal()(3), transp)
+        boxplot(ARL ~ um, data=IC, xlab="", names=rep(c("AE", "CL", "FP"), 1), col = colour, outline=FALSE)
         abline(h = IC$Arl0[1], lty="dashed")
         dev.off()
         write(tabIC$tab, file=paste0(outputFolder, "/IC-summary.tex"))
@@ -85,7 +88,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
             num_up = length(unique(subdf$um))
             num_tau = length(unique(subdf$tau))
             png(paste0(outputFolder, "/delta=", sprintf("%.2f", d), ".png"))
-            boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), outline=FALSE, ylim = c(1, top_position))
+            boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), col = rep(colour, 3), outline=FALSE, ylim = c(1, top_position))
             abline(v = 0.5 + num_up*(2:num_tau-1), lty="dashed")
             text(x = 2 + num_up*(1:num_tau-1), y = max_y + 0.75*vertical_offset, parse(text = paste0("tau ==", unique(OC$tau))))
             dev.off()
