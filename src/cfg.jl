@@ -31,6 +31,7 @@ end
 include(srcdir("simulate_runs.jl"))
 
 
+DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
 DrWatson.default_prefix(e::SimulationSettings) = "SimulationSettings"
 DrWatson.default_allowed(::SimulationSettings) = (Real, String, Distribution, UnivariateSeries, AdaptiveEstimator, FixedParameter, CautiousLearning)
 Base.string(::AdaptiveEstimator) = "AdaptiveEstimator"

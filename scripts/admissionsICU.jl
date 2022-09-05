@@ -5,7 +5,6 @@ include(srcdir("cfg.jl"))
 
 using Random, Distributions, DataFrames, CSV, Dates, StatsBase
 using Plots, StatsPlots, LaTeXStrings
-DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
 
 function applyChart(ch, um, thetaHat, m, yprosp; seed = 123)
     # Random.seed!(seed)
