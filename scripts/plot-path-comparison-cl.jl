@@ -76,10 +76,10 @@ function plot_comparison(res; tau = 0, fill=true)
     return p
 end
 
-function plot_window_of_opportunity(res; tau = 0, xlab=L"t", ylab=L"\hat{\theta}_t")
+function plot_window_of_opportunity(res; jmpsize = 0.1, tau = 0, xlab=L"t", ylab=L"\hat{\theta}_t")
     tauHat = res[:t_alarm]
     t = collect(1:tauHat-1)
-    idx = diff(res[:parameter_updates]) .>= 0.1
+    idx = diff(res[:parameter_updates]) .>= jmpsize
     idx_jump = first(t[idx])
     p = plot(res[:parameter_updates], dpi=400, xlab=xlab, ylab=ylab, label="",legend=:bottomright)
     if tau != 0
@@ -94,7 +94,7 @@ end
 
 
 ch = signedEWMA(L=0.5)
-cfg = SimulationSettings(ch=ch, ncond=10, Arl0=500, um=CautiousLearning(ATS=0), seed=2022-08-23)
+cfg = SimulationSettings(ch=ch, D=Poisson(4.0), Arl0=500, um=CautiousLearning(ATS=0), seed=2022-08-23)
 ncond   = cfg.ncond
 ch      = cfg.ch
 um      = cfg.um
@@ -118,42 +118,11 @@ chart = typeof(ch)(ch, L=L_gicp["res"][:L])
 
 
 folder = plotsdir("sims", "window-of-opportunity")
-Random.seed!(109)
-tau = 50
+Random.seed!(13)
+tau = 150
 res = runSimulationInfo(chart, um, thetaHat, D, m, IC=false, tau=tau, delta=0.5, maxrl=maxrl)
 plt = plot_comparison(res, tau=tau)
 safesave(folder * "/shaded-regions-cl", plt)
 
-plt = plot_window_of_opportunity(res, tau=tau)
+plt = plot_window_of_opportunity(res, tau=tau, jmpsize=0.1)
 safesave(folder * "/thetahat", plt)
-
-# ------- Self-starting ------- #
-
-Random.seed!(2022-05-2)
-rand(dist, m)
-UPR = SelfStarting(D(θhat), θhat, m, 1)
-res = simulate_regions(ch, UPR, ARL0, m, θ, IC = IC, δ=δ, τ=τ, maxiter = maxiter, Nboot=Nboot)
-out = plot_comparison(res, UPR)
-out[1]
-safesave(plotsdir("CL-bootstrap-single", "ss.png"), out[1])
-
-out = plot_comparison(res, UPR, fill=false)
-out[1]
-safesave(plotsdir("CL-bootstrap-single", "ss-nofill.png"), out[1])
-
-# ------- No learning ------- #
-
-Random.seed!(2022-05-2)
-rand(dist, m)
-# UPR = CautiousBootstrap(D(θhat), 1.0, θhat, 1, m)
-# UPR = SelfStarting(D(θhat), θhat, m, 1)
-UPR = FixedParameter(D(θhat), θhat, m, 1)
-res = simulate_regions(ch, UPR, ARL0, m, θ, IC = IC, δ=δ, τ=τ, maxiter = maxiter, Nboot=Nboot)
-out = plot_comparison(res, UPR)
-out[1]
-safesave(plotsdir("CL-bootstrap-single", "fp.png"), out[1])
-
-
-out = plot_comparison(res, UPR, fill=false)
-out[1]
-safesave(plotsdir("CL-bootstrap-single", "fp-nofill.png"), out[1])

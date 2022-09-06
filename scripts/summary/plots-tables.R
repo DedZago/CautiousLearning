@@ -68,7 +68,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
     if(file.exists(outputFile)){
         dat = read.csv(outputFile)
         # Boxplot ARL results
-        png(paste0(outputFolder, "/IC.png"))
+        png(paste0(outputFolder, "/IC.png"), height=1600, width = 2440, res=300)
         IC = dat[dat$tau == 0, ]
         tabIC = compute_summary_IC(IC)
         colour = alpha(hue_pal()(3), transp)
@@ -87,7 +87,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
             top_position = max_y + vertical_offset
             num_up = length(unique(subdf$um))
             num_tau = length(unique(subdf$tau))
-            png(paste0(outputFolder, "/delta=", sprintf("%.2f", d), ".png"))
+            png(paste0(outputFolder, "/delta=", sprintf("%.2f", d), ".png"), height=1600, width = 2440, res=300)
             boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), col = rep(colour, 3), outline=FALSE, ylim = c(1, top_position))
             abline(v = 0.5 + num_up*(2:num_tau-1), lty="dashed")
             text(x = 2 + num_up*(1:num_tau-1), y = max_y + 0.75*vertical_offset, parse(text = paste0("tau ==", unique(OC$tau))))
