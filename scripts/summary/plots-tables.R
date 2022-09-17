@@ -43,6 +43,45 @@ compute_summary_OC = function(dat){
     return(list("df" = out, "tab" = tex_OC))
 }
 
+plotProfiles = function(dat, only_oc = TRUE){
+    # Plot median CARL profiles for each control chart
+	#
+    # @param dat: output dataset
+	#
+    # @return TODO
+
+    require(dplyr)
+    require(latex2exp)
+    require(ggpubr)
+    proc = dat %>% 
+        group_by(um, delta, tau) %>% 
+        summarise_at(vars(ARL), list(stat = median))
+
+    ut = unique(proc$tau)
+    ut = setdiff(ut, 0)
+    nt = length(ut)
+    plotList = vector(mode="list", length=nt)
+    for(i in 1:nt){
+        tau = ut[i]
+        df_plot = proc[proc$tau == tau, ]
+        if(!only_oc){
+            df_plot = rbind(df_plot, proc[proc$delta == 0, ])
+        }
+        p <- ggplot(df_plot, aes(x = delta, y = stat, colour = um, shape = um)) +
+            xlab(TeX("$\\delta$")) + 
+            ylab("median") + 
+            geom_line() +
+            geom_point() +
+            theme_bw() + 
+            ggtitle(TeX(paste0("$\\tau = ", as.character(tau), "$"))) +
+            theme(legend.title=element_blank()) 
+        plotList[[i]] = p
+    }
+
+    plt = ggarrange(plotList[[1]], plotList[[2]], plotList[[3]], ncol = 1, nrow = length(plotList), common.legend = TRUE, legend="top")
+
+    return(plt)
+}
 
 library(ggplot2)
 transp = 0.3
@@ -93,6 +132,11 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
             text(x = 2 + num_up*(1:num_tau-1), y = max_y + 0.75*vertical_offset, parse(text = paste0("tau ==", unique(OC$tau))))
             dev.off()
         }
+        
+        # Plot OC median CARL profiles
+        only_oc = TRUE
+        plt = plotProfiles(dat, only_oc)
+        ggsave(paste0(outputFolder, "/OC-profiles.png"), plt)
         tabOC = compute_summary_OC(OC)
         write(tabOC$tab, file=paste0(outputFolder, "/OC-summary.tex"))
     }
