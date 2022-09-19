@@ -45,3 +45,18 @@ function check_update(ch::C, um::CautiousLearning) where C <: OneSidedUnivariate
         return get_value(ch) == 0.0
     end
 end
+
+@with_kw struct CautiousLearningCM <: AbstractUpdate
+    A = 1.5
+    B = 50.0
+end
+
+function check_update(um::CautiousLearningCM, qtilde)
+    A = um.A
+    B = um.B
+    if qtilde < A*di - B
+        return true
+    else
+        return false
+    end
+end

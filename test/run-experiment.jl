@@ -36,6 +36,13 @@ include(srcdir("cfg.jl"))
     @testset "RunGICP" begin
         res = runConditionalSimulations(out, verbose=true)
     end
+
+    @testset "CautiousLearning C&M" begin
+        um = CautiousLearningCM()
+        icRun = runSimulation(ch, um, thetaHat, D, m, IC=true, tau=1, delta=0.0, maxrl=maxrl)
+        @test isa(icRun, NamedTuple{(:t_alarm,), Tuple{Int64}})
+        @test icRun[:t_alarm] == 105
+    end
 end
 
 

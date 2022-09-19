@@ -46,6 +46,56 @@ function runSimulation(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=
 
 end
 
+function runSimulation(ch, um::CautiousLearningCM, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=Int(1e04))
+    A = um.A
+    B = um.B
+    qi = 0
+    qtilde = 0
+
+    maxrl_i = Int(round(maxrl))
+    thetaHatVec = zeros(maxrl_i)
+    thetaHatVec[1] = thetaHat
+    di = 1
+    diVec = Array{Int}(undef, maxrl_i)
+    diVec[1] = di
+    thetaHatCaut = thetaHat
+    thetaHatCautVec = zeros(maxrl_i)
+    thetaHatCautVec[1] = thetaHatCaut
+
+    valueVec = zeros(maxrl_i)
+    valueVec[1] = get_value(ch)
+    i = 1
+    while i < maxrl_i
+        thetaHatCaut = thetaHatVec[i - di + 1]
+        y = gen_data_seq(D, i, IC=IC, tau=tau, delta=delta)
+        ch = update_series(ch, chart_statistic(y, thetaHatCaut))
+        thetaHat = update_parameter(thetaHat, y, i + m)
+        i += 1
+        valueVec[i] = get_value(ch)
+        thetaHatVec[i] = thetaHat
+
+        # C&M (2020)
+        qtilde = qi + chart_statistic(y, thetaHatCaut)^(2.0)
+        if qtilde < A * di - B
+            di = 1
+            qi = 0
+        else
+            di += 1
+            qi = qtilde
+        end
+        diVec[i] = di
+        thetaHatCautVec[i] = thetaHatCaut
+        if check_OC(ch)
+            break
+        end
+
+    end
+
+    return @NamedTuple{t_alarm::Int64, chart_values::Vector{Float64}, limit_alarm::Float64, parameter_updates::Vector{Float64}, di::Vector{Int64}}((t_alarm = i, chart_values = valueVec[1:i], limit_alarm = get_limits(ch), parameter_updates = thetaHatCautVec[1:i], di = diVec[1:i]))
+    # return @NamedTuple{t_alarm::Int64}((t_alarm = i, ))
+
+end
+
 
 """
 	saControlLimits(ch, um, rlsim::Function, Arl0, thetaHat, Dist, m; kw...)
