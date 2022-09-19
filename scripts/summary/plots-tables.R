@@ -87,6 +87,7 @@ library(ggplot2)
 transp = 0.3
 # Load data and create the same boxplot as in Capizzi and Masarotto (2020)
 setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
+
 for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names=TRUE)){
     limitsFile = paste0(sims_folder, "/output/limits_R.csv")
     outputFile = paste0(sims_folder, "/output/output_R.csv")
@@ -105,13 +106,18 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
     }
 
     if(file.exists(outputFile)){
+        allMethods = c("AE", "CL", "CL-CM", "FP")
         dat = read.csv(outputFile)
         # Boxplot ARL results
         png(paste0(outputFolder, "/IC.png"), height=1600, width = 2440, res=300)
         IC = dat[dat$tau == 0, ]
         tabIC = compute_summary_IC(IC)
-        colour = alpha(hue_pal()(3), transp)
-        boxplot(ARL ~ um, data=IC, xlab="", names=rep(c("AE", "CL", "FP"), 1), col = colour, outline=FALSE)
+        uniqueMethods = unique(IC$um)
+        uniqueNames = allMethods[1:length(uniqueMethods)]
+
+        #! Check order of xlab in boxplots
+        colour = alpha(hue_pal()(length(uniqueMethods)), transp)
+        boxplot(ARL ~ um, data=IC, xlab="", names=rep(namesMethods, 1), col = colour, outline=FALSE)
         abline(h = IC$Arl0[1], lty="dashed")
         dev.off()
         write(tabIC$tab, file=paste0(outputFolder, "/IC-summary.tex"))
@@ -120,14 +126,14 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
         for(d in unique(OC$delta)){
             subdf = OC[OC$delta == d, ]
             # Get limits for the boxplot
-            tmp = boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), outline=FALSE, plot=FALSE)
+            tmp = boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(uniqueNames, 3), outline=FALSE, plot=FALSE)
             max_y = max(tmp$stats)
             vertical_offset = 0.10*max_y
             top_position = max_y + vertical_offset
             num_up = length(unique(subdf$um))
             num_tau = length(unique(subdf$tau))
             png(paste0(outputFolder, "/delta=", sprintf("%.2f", d), ".png"), height=1600, width = 2440, res=300)
-            boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(c("AE", "CL", "FP"), 3), col = rep(colour, 3), outline=FALSE, ylim = c(1, top_position))
+            boxplot(ARL ~ um + tau, data=subdf, xlab="", names=rep(uniqueNames, 3), col = rep(colour, 3), outline=FALSE, ylim = c(1, top_position))
             abline(v = 0.5 + num_up*(2:num_tau-1), lty="dashed")
             text(x = 2 + num_up*(1:num_tau-1), y = max_y + 0.75*vertical_offset, parse(text = paste0("tau ==", unique(OC$tau))))
             dev.off()
@@ -141,3 +147,41 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
         write(tabOC$tab, file=paste0(outputFolder, "/OC-summary.tex"))
     }
 }
+
+
+comparison_table = function(df1, df2, name){
+    # Comparison between two control charts, depending on the update mechanisms
+	#
+    # @param df1: TODO
+    # @param df2: TODO
+    # @param name: TODO
+	#
+    # @return TODO
+
+    df = data.frame()
+    for(um in unique(df1$Type)){
+        sub1 = df1[df1$Type == um, ]
+        sub2 = df2[df2$Type == um, ]
+        df = rbind(df, data.frame(rep(um, nrow(sub1)), sub1$tau, sub1$delta, sub1$Median, sub2$Median))
+    }
+    names(df) = c("um", "delta", "tau", name)
+    return(df)
+}
+
+# table with comparison between EWMA and AEWMA depending on the update mechanism
+for(sims_folder_AEWMA in list.files(path = "data/sims", pattern = "*AEWMA", full.names=TRUE)){
+    sims_folder_EWMA = str_replace_all(sims_folder_AEWMA, "AEWMA", "EWMA")
+    reg = regex("k = \\d.\\d+, ")
+    sims_folder_EWMA = str_replace_all(sims_folder_EWMA, reg, "")
+    dat_AEWMA = read.csv(paste0(sims_folder_AEWMA, "/output/output_R.csv"))
+    dat_EWMA = read.csv(paste0(sims_folder_EWMA, "/output/output_R.csv"))
+
+
+    oc_AEWMA = compute_summary_OC(dat_AEWMA)$df
+    oc_EWMA = compute_summary_OC(dat_EWMA)$df
+
+    tab = comparison_table(oc_EWMA, oc_AEWMA, c("EWMA", "AEWMA"))
+    print(tab)
+}
+
+
