@@ -91,8 +91,8 @@ function runSimulation(ch, um::CautiousLearningCM, thetaHat, D, m; IC=true, tau=
 
     end
 
-    return @NamedTuple{t_alarm::Int64, chart_values::Vector{Float64}, limit_alarm::Float64, parameter_updates::Vector{Float64}, di::Vector{Int64}}((t_alarm = i, chart_values = valueVec[1:i], limit_alarm = get_limits(ch), parameter_updates = thetaHatCautVec[1:i], di = diVec[1:i]))
-    # return @NamedTuple{t_alarm::Int64}((t_alarm = i, ))
+    # return @NamedTuple{t_alarm::Int64, chart_values::Vector{Float64}, limit_alarm::Float64, parameter_updates::Vector{Float64}, di::Vector{Int64}}((t_alarm = i, chart_values = valueVec[1:i], limit_alarm = get_limits(ch), parameter_updates = thetaHatCautVec[1:i], di = diVec[1:i]))
+    return @NamedTuple{t_alarm::Int64}((t_alarm = i, ))
 
 end
 
