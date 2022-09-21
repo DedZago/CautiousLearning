@@ -73,6 +73,7 @@ plotProfiles = function(dat, only_oc = TRUE){
             geom_line() +
             geom_point() +
             theme_bw() + 
+            scale_x_continuous(breaks = seq(min(df_plot$delta), max(df_plot$delta), by = 0.25)) +
             ggtitle(TeX(paste0("$\\tau = ", as.character(tau), "$"))) +
             theme(legend.title=element_blank()) 
         plotList[[i]] = p
@@ -117,7 +118,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
 
         #! Check order of xlab in boxplots
         colour = alpha(hue_pal()(length(uniqueMethods)), transp)
-        boxplot(ARL ~ um, data=IC, xlab="", names=rep(namesMethods, 1), col = colour, outline=FALSE)
+        boxplot(ARL ~ um, data=IC, xlab="", names=rep(uniqueNames, 1), col = colour, outline=FALSE)
         abline(h = IC$Arl0[1], lty="dashed")
         dev.off()
         write(tabIC$tab, file=paste0(outputFolder, "/IC-summary.tex"))
