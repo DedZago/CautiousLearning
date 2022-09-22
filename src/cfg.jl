@@ -41,7 +41,8 @@ Base.string(um::CautiousLearningCM) = "CautiousLearningCM"
 Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 
 
-umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0), CautiousLearningCM()]
+umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
+# umVec = [CautiousLearningCM()]
 
 # seed = 2022-08-23
 # Random.seed!(seed)
@@ -57,4 +58,4 @@ Random.seed!(seed)
 maxseed = Int(1e09)
 lambda = [0.050, 0.075, 0.100, 0.125, 0.150, 0.175, 0.200]
 seed_values = [rand(1:maxseed) for _ in lambda]
-config = [SimulationSettings(ch = signedEWMA(l=lambda[i], L=1.0), D=Poisson(4.0), um = um, seed = seed_values[i]) for um in umVec for i in 1:length(lambda)]
+config = [SimulationSettings(ch = signedEWMA(l=lambda[i], L=1.0), D=Poisson(4.0), um = um, seed = seed_values[i])  for i in 1:length(lambda) for um in umVec]
