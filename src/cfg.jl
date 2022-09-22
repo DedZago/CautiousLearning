@@ -31,23 +31,30 @@ end
 include(srcdir("simulate_runs.jl"))
 
 
-DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
+# DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
 DrWatson.default_prefix(e::SimulationSettings) = "SimulationSettings"
 DrWatson.default_allowed(::SimulationSettings) = (Real, String, Distribution, UnivariateSeries, AdaptiveEstimator, FixedParameter, CautiousLearning)
 Base.string(::AdaptiveEstimator) = "AdaptiveEstimator"
 Base.string(::FixedParameter) = "FixedParameter"
 Base.string(um::CautiousLearning) = "CautiousLearning(ATS="* string(get_ATS(um))*")"
+Base.string(um::CautiousLearningCM) = "CautiousLearningCM"
 Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 
 
-# umVec = [CautiousLearning(ATS=0)]
-umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
-seed = 2022-08-23
-config = [
-          [SimulationSettings(ch = signedEWMA(l=0.033, L=1.0), D=Poisson(1.0), um = um, seed = seed) for um in umVec];
-            [SimulationSettings(ch = signedEWMA(l=0.0230, L=1.0), D=Poisson(4.0), um = um, seed = seed+1) for um in umVec];
-            [SimulationSettings(ch = signedEWMA(l=0.0190, L=1.0), D=Poisson(7.0), um = um, seed = seed+2) for um in umVec];
-            [SimulationSettings(ch = signedAEWMA(l=0.033, k = 4.16, L=1.0), D=Poisson(1.0), um = um, seed = seed) for um in umVec];
-            [SimulationSettings(ch = signedAEWMA(l=0.0230, k = 7.7403, L=1.0), D=Poisson(4.0), um = um, seed = seed+1) for um in umVec];
-            [SimulationSettings(ch = signedAEWMA(l=0.0190, k = 9.7699, L=1.0), D=Poisson(7.0), um = um, seed = seed+2) for um in umVec];
-           ]
+umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0), CautiousLearningCM()]
+
+# seed = 2022-08-23
+# Random.seed!(seed)
+# maxseed = Int(1e09)
+# config = [
+#           [SimulationSettings(ch = signedEWMA(l=0.033, L=1.0), D=Poisson(1.0), um = um, seed = rand(1:maxseed)) for um in umVec];
+#             [SimulationSettings(ch = signedEWMA(l=0.0230, L=1.0), D=Poisson(4.0), um = um, seed = rand(1:maxseed)) for um in umVec];
+#             [SimulationSettings(ch = signedEWMA(l=0.0190, L=1.0), D=Poisson(7.0), um = um, seed = rand(1:maxseed)) for um in umVec];
+#            ]
+
+seed = 2022-09-22
+Random.seed!(seed)
+maxseed = Int(1e09)
+lambda = [0.050, 0.075, 0.100, 0.125, 0.150, 0.175, 0.200]
+seed_values = [rand(1:maxseed) for _ in lambda]
+config = [SimulationSettings(ch = signedEWMA(l=lambda[i], L=1.0), D=Poisson(4.0), um = um, seed = seed_values[i]) for um in umVec for i in 1:length(lambda)]

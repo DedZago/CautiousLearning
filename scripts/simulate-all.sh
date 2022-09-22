@@ -1,3 +1,13 @@
-./simulate-GICP.sh
-./simulate-ARL.sh
+totsim=500
+# ncores=16
+ncores=$(grep -c ^processor /proc/cpuinfo)
+echo "ncores: $ncores"
+
+neach=$((($totsim+$ncores-1)/$ncores))
+echo "neach: $neach"
+
+echo parallel --ungroup julia simulate/run-GICP.jl -n $neach -t {1} -a false ::: {1..$ncores}
+wait
+# parallel --ungroup julia simulate/run-ARL.jl -n $neach -t {1} -a false ::: {1..$ncores}
+wait
 ./collect-and-plot.sh
