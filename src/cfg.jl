@@ -41,8 +41,8 @@ Base.string(um::CautiousLearningCM) = "CautiousLearningCM"
 Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 
 
-umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
-# umVec = [CautiousLearningCM()]
+# umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
+umVec = [CautiousLearningCM()]
 
 # seed = 2022-08-23
 # Random.seed!(seed)

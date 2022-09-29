@@ -12,7 +12,7 @@ compute_summary_IC = function(dat){
     out = cbind(out, aggregate(dat$ARL, list("Type" = dat$um), function(x) mean(x <= dat$Arl0[1]))[, 2])
     colnames(out) = c("Type", "AARL", "SDARL", "$\\text{Pr}(\\text{ARL}_0 \\leq \\text{a})$")
 
-    tex_IC <- kable(out, format="latex", booktabs=TRUE, digits = 2, row.names=FALSE, escape=FALSE, align='c', linesep = "",
+    tex_IC <- kable(out, format="latex", booktabs=TRUE, digits = 3, row.names=FALSE, escape=FALSE, align='c', linesep = "",
         caption = "Summary of the in-control performance of the control chart using the fixed-parameter, adaptive estimator, and the proposed cautious learning update rules."
     ) %>%
         kable_styling(latex_options = "hold_position")
@@ -34,7 +34,7 @@ compute_summary_OC = function(dat){
     # out$AARL = round(out$AARL, 2)
     # out$AARL = cell_spec(out$AARL, bold = vecBest, format="latex")
 
-    tex_OC <- kable(out, format="latex", booktabs=TRUE, digits = 2, row.names=FALSE, escape=FALSE, align='c', linesep = "",
+    tex_OC <- kable(out, format="latex", booktabs=TRUE, digits = 3, row.names=FALSE, escape=FALSE, align='c', linesep = "",
         caption = "Summary of the out-of-control performance of the control chart using the fixed-parameter, adaptive estimator, and the proposed cautious learning update rules."
     ) %>%
         kable_styling(latex_options = "hold_position")
@@ -107,7 +107,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
     }
 
     if(file.exists(outputFile)){
-        allMethods = c("AE", "CL", "CL-CM", "FP")
+        allMethods = c("AE", "CLM", "C&M", "FE")
         dat = read.csv(outputFile)
         # Boxplot ARL results
         png(paste0(outputFolder, "/IC.png"), height=1600, width = 2440, res=300)

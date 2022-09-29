@@ -1,6 +1,5 @@
-
 using DrWatson
-@quickactivate "cautiousBootstrap"
+@quickactivate "CautiousLearning"
 
 include(srcdir("cfg.jl"))
 using Plots, StatsPlots, LaTeXStrings
@@ -86,8 +85,7 @@ function plot_window_of_opportunity(res; jmpsize = 0.1, tau = 0, xlab=L"t", ylab
         vline!(p, [tau], style=:dash, label=L"\tau")
         window_of_opp = collect(tau:idx_jump)
         miny, maxy = ylims(p)
-        plot!(p, window_of_opp, fill(miny, length(window_of_opp)), fillrange=[fill(maxy, length(window_of_opp))],
-                fillcolor = "gray", fillalpha=0.25, alpha=0.0, label="")
+        plot!(p, window_of_opp, fill(miny, length(window_of_opp)), fillrange=fill(maxy, length(window_of_opp)), fillcolor = "gray", fillalpha=0.25, alpha=0.0, label="")
     end
     return p
 end
@@ -107,6 +105,8 @@ tau     = cfg.tau
 delta   = cfg.delta
 maxrl   = cfg.maxrl
 simulation = cfg.simulation
+
+DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
     
 # Set simulation seed
 Random.seed!(123)
@@ -118,6 +118,24 @@ chart = typeof(ch)(ch, L=L_gicp["res"][:L])
 
 
 folder = plotsdir("sims", "window-of-opportunity")
+Random.seed!(13)
+tau = 150
+res = runSimulationInfo(chart, um, thetaHat, D, m, IC=false, tau=tau, delta=0.65, maxrl=maxrl)
+plt = plot_comparison(res, tau=tau)
+safesave(folder * "/shaded-regions-cl", plt)
+
+plt = plot_window_of_opportunity(res, tau=tau, jmpsize=0.1)
+safesave(folder * "/thetahat", plt)
+
+Random.seed!(123)
+yinit = rand(D, m)
+thetaHat = mean(yinit)
+um = AdaptiveEstimator()
+cfg = SimulationSettings(cfg, um = um)
+L_gicp = runGICP(cfg, verbose=true)
+
+chart = typeof(ch)(ch, L=L_gicp["res"][:L])                        
+
 Random.seed!(13)
 tau = 150
 res = runSimulationInfo(chart, um, thetaHat, D, m, IC=false, tau=tau, delta=0.5, maxrl=maxrl)

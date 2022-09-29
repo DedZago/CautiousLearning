@@ -1,10 +1,11 @@
 using DrWatson
 @quickactivate "cautiousBootstrap"
+DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
 
 include(srcdir("cfg.jl"))
 
 using Random, Distributions, DataFrames, CSV, Dates, StatsBase
-using Plots, StatsPlots, LaTeXStrings
+using Plots, StatsPlots, LaTeXStrings, RCall
 
 function applyChart(ch, um, thetaHat, m, yprosp; seed = 123)
     # Random.seed!(seed)
@@ -67,7 +68,7 @@ function applyChartGICP(ch, um, yinit, yprosp, thetaHat, Arl0; beta::Union{Bool,
     if beta == false
         chart = deepcopy(ch)
     else
-        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta=beta, verbose=verbose, seed=seed + 1)
+        chart = adjust_chart_gicp(ch, um, yinit, thetaHat, runSimulation, m, Arl0, beta=beta, verbose=verbose)
     end
 
     return applyChart(chart, um, thetaHat, m, yprosp)
@@ -83,12 +84,13 @@ nydat = filter(row -> year(row.date) == 2020, nydat)
 using Plots.PlotMeasures
 y2020 = nydat[:, 4]
 days2020 = nydat[:, 5]
-ic_2020 = 125:175
+# ic_2020 = 115:175
+ic_2020 = 115:155
 oc_2020 = (ic_2020[end]+1):length(y2020)
 n_ic = length(ic_2020)
 n_oc = length(oc_2020)
 pl = plot(days2020, y2020, label="", dpi=400, xrotation=45, bottom_margin=3mm)
-plot!(pl, days2020[ic_2020], fill(0, n_ic), fillrange=[fill(maximum(y2020), n_ic)], color=:gray, fillcolor = "gray", fillalpha=0.25, alpha=0.0, label="IC")
+plot!(pl, days2020[ic_2020], fill(0, n_ic), fillrange=fill(maximum(y2020), n_ic), color=:gray, fillcolor = "gray", fillalpha=0.25, alpha=0.0, label="IC")
 safesave(plotsdir(fold, "ICU-cases-2020"),pl)
 
 y = y2020[[ic_2020; oc_2020]]
@@ -106,8 +108,8 @@ println(daysIC[[1, end]])
 println(days[111])
 
 pl = plot(days, y, label="", dpi=400, xrotation=45, bottom_margin=3mm)
-plot!(pl, days[1:n_ic], fill(0, n_ic), fillrange=[fill(maximum(y), n_ic)], color=:gray, fillcolor = "gray", fillalpha=0.25, alpha=0.0, label="IC", legend=:bottomright)
-τ = n_ic + 9
+plot!(pl, days[1:n_ic], fill(0, n_ic), fillrange=fill(maximum(y), n_ic), color=:gray, fillcolor = "gray", fillalpha=0.25, alpha=0.0, label="IC", legend=:bottomright)
+τ = n_ic + 29
 vline!([days[τ]], color=:gray, linestyle=:dot, linewidth=2,  label="", markersize=2.5)
 safesave(plotsdir(fold, "ICU-IC-OC.png"), pl)
 
@@ -122,22 +124,38 @@ fname = plotsdir(fold, "alarms.jld2")
 
 umVec = [CautiousLearning(ATS=0), FixedParameter(), AdaptiveEstimator()]
 nms = ["CL-OC", "FP-OC", "AE-OC"]
+perf = []
+L = []
 for i in eachindex(umVec)
-    filesave = datadir(fold, nms[i]*".jld2")
-    if isfile(filesave)
-        res = load(filesave)["res"]
-    else
-        ch = signedAEWMA(l=0.019, k=9.7699, L = 1.0)
-        beta = 0.1
-        um = CautiousLearning(ATS=0)
-        res = applyChartGICP(ch, um, yIC, yOC, thetaHat, Arl0, beta=beta)
-    end
-        plotsave = plotsdir(fold, nms[i]*".png")
-        pl = plot(res.chart_values[1:25], label=L"C_t", legend=:outerright, dpi=400)
-        hline!([res.limit_alarm], style=:dash, colour="red", xlab=L"t", ylab=L"C_t", label="")
-        tau = Int(first(res.t_alarm))
-        scatter!([tau], [res.chart_values[tau]], colour="red", label="")
-        safesave(filesave, @strdict res)
-        safesave(plotsave, pl)
-        println(tau,"\t", daysOC[tau])
+    ch = signedEWMA(l=0.2, L = 1.0)
+    beta = 0.05
+    um = umVec[i]
+    res = applyChartGICP(ch, um, yIC, yOC, thetaHat, Arl0, beta=beta)
+    append!(L, res[:limit_alarm])
+    plotsave = plotsdir(fold, nms[i]*".png")
+    pl = plot(res.chart_values[1:55], label=L"C_t", legend=:outerright, dpi=400)
+    hline!([res.limit_alarm], style=:dash, colour="red", xlab=L"t", ylab=L"C_t", label="")
+    tau = Int(first(res.t_alarm))
+    scatter!([tau], [res.chart_values[tau]], colour="red", label="")
+    append!(perf, tau)
+    safesave(filesave, @strdict res)
+    safesave(plotsave, pl)
+    println(tau,"\t", daysOC[tau])
 end
+
+@rput nms
+@rput perf
+@rput L
+
+tab = R"""
+library(knitr)
+library(kableExtra)
+df = cbind(nms, perf, L)
+tex_OC <- kable(df, format="latex", booktabs=TRUE, digits = 2, row.names=FALSE, col.names=c("Estimator", "Alarm", "Limit"), escape=FALSE, align='c', linesep = "",
+    caption = "Time to alarm of the one-sided EWMA control chart using the fixed (FE), adaptive (AE) and the proposed cautious learning (CLM) update rules.", label="ICU OC alarm") %>%
+    kable_styling(latex_options = "HOLD_position")
+""" |> rcopy
+
+file = open(plotsdir(fold, "OC-comparison.tex"), "w")
+write(file, tab)
+close(file)
