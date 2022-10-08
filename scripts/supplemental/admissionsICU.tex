@@ -3,12 +3,24 @@
 \usepackage[a4paper,text={16.5cm,25.2cm},centering]{geometry}
 \usepackage{lmodern}
 \usepackage{amssymb,amsmath}
+\usepackage{caption}
+\usepackage{subcaption}
 \usepackage{bm}
 \usepackage{graphicx}
 \usepackage{microtype}
 \usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{float}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{1.2ex}
+
+% ---- All figures are not floating ---- %
+% REMOVE WHEN NOT DRAFT
+\makeatletter
+\renewcommand*{\fps@figure}{H}
+\renewcommand*{\fps@table}{H}
+\makeatother
+% -------------------------------------- %
 
 \hypersetup
        {   pdfauthor = { Daniele Zago and Giovanna Capizzi },
@@ -124,6 +136,9 @@
 
 \maketitle
 
+\input{additional-simulations.tex}
+
+\section{Application to the ICU admissions data}
 Here, we implement the code that reproduces the analysis on the ICU dataset in Section 5 of the paper.
 
 First, we load the necessary packages and the environment variables that are provided in the source code.
@@ -145,12 +160,7 @@ First, we load the necessary packages and the environment variables that are pro
 (*@\HLJLnf{include}@*)(*@\HLJLp{(}@*)(*@\HLJLnf{srcdir}@*)(*@\HLJLp{(}@*)(*@\HLJLs{"{}generate{\_}data.jl"{}}@*)(*@\HLJLp{))}@*)
 (*@\HLJLnf{include}@*)(*@\HLJLp{(}@*)(*@\HLJLnf{srcdir}@*)(*@\HLJLp{(}@*)(*@\HLJLs{"{}update{\_}parameter.jl"{}}@*)(*@\HLJLp{))}@*)
 (*@\HLJLnf{include}@*)(*@\HLJLp{(}@*)(*@\HLJLnf{srcdir}@*)(*@\HLJLp{(}@*)(*@\HLJLs{"{}simulate{\_}runs.jl"{}}@*)(*@\HLJLp{))}@*)
-\end{lstlisting}
-
-\begin{lstlisting}
-Error: LoadError: UndefVarError: SimulationSettings not defined
-in expression starting at /home/dede/Documents/git/SPC/CautiousLearning/src
-/simulate(*@{{\_}}@*)runs.jl:206
+(*@\HLJLnf{include}@*)(*@\HLJLp{(}@*)(*@\HLJLnf{srcdir}@*)(*@\HLJLp{(}@*)(*@\HLJLs{"{}cfg.jl"{}}@*)(*@\HLJLp{))}@*)
 \end{lstlisting}
 
 
@@ -203,10 +213,9 @@ Then, we select the indices of the IC/OC datasets along with the initial sample 
 (*@\HLJLn{n{\_}oc}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{length}@*)(*@\HLJLp{(}@*)(*@\HLJLn{oc{\_}2020}@*)(*@\HLJLp{)}@*)
 (*@\HLJLn{pl}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{plot}@*)(*@\HLJLp{(}@*)(*@\HLJLn{days2020}@*)(*@\HLJLp{,}@*) (*@\HLJLn{y2020}@*)(*@\HLJLp{,}@*) (*@\HLJLn{label}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}"{}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{dpi}@*)(*@\HLJLoB{=}@*)(*@\HLJLni{400}@*)(*@\HLJLp{,}@*) (*@\HLJLn{xrotation}@*)(*@\HLJLoB{=}@*)(*@\HLJLni{45}@*)(*@\HLJLp{,}@*) (*@\HLJLn{bottom{\_}margin}@*)(*@\HLJLoB{=}@*)(*@\HLJLni{3}@*)(*@\HLJLn{mm}@*)(*@\HLJLp{)}@*)
 (*@\HLJLnf{plot!}@*)(*@\HLJLp{(}@*)(*@\HLJLn{pl}@*)(*@\HLJLp{,}@*) (*@\HLJLn{days2020}@*)(*@\HLJLp{[}@*)(*@\HLJLn{ic{\_}2020}@*)(*@\HLJLp{],}@*) (*@\HLJLnf{fill}@*)(*@\HLJLp{(}@*)(*@\HLJLni{0}@*)(*@\HLJLp{,}@*) (*@\HLJLn{n{\_}ic}@*)(*@\HLJLp{),}@*) (*@\HLJLn{fillrange}@*)(*@\HLJLoB{=}@*)(*@\HLJLnf{fill}@*)(*@\HLJLp{(}@*)(*@\HLJLnf{maximum}@*)(*@\HLJLp{(}@*)(*@\HLJLn{y2020}@*)(*@\HLJLp{),}@*) (*@\HLJLn{n{\_}ic}@*)(*@\HLJLp{),}@*) (*@\HLJLn{color}@*)(*@\HLJLoB{=:}@*)(*@\HLJLn{gray}@*)(*@\HLJLp{,}@*) (*@\HLJLn{fillcolor}@*) (*@\HLJLoB{=}@*) (*@\HLJLs{"{}gray"{}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{fillalpha}@*)(*@\HLJLoB{=}@*)(*@\HLJLnfB{0.25}@*)(*@\HLJLp{,}@*) (*@\HLJLn{alpha}@*)(*@\HLJLoB{=}@*)(*@\HLJLnfB{0.0}@*)(*@\HLJLp{,}@*) (*@\HLJLn{label}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}IC"{}}@*)(*@\HLJLp{)}@*)
-(*@\HLJLcs{{\#}}@*) (*@\HLJLcs{safesave(plotsdir(fold,}@*) (*@\HLJLcs{"{}ICU-cases-2020"{}),pl)}@*)
 \end{lstlisting}
 
-\includegraphics[width=\linewidth]{jl_64fcHC/admissionsICU_5_1.pdf}
+\includegraphics[width=\linewidth]{figures/admissionsICU_5_1.pdf}
 
 We then isolate the IC and OC data. This code reproduces Figure ?? in the paper.
 
@@ -228,7 +237,6 @@ We then isolate the IC and OC data. This code reproduces Figure ?? in the paper.
 (*@\HLJLn{\ensuremath{\tau}}@*) (*@\HLJLoB{=}@*) (*@\HLJLn{n{\_}ic}@*) (*@\HLJLoB{+}@*) (*@\HLJLni{29}@*)
 (*@\HLJLnf{vline!}@*)(*@\HLJLp{([}@*)(*@\HLJLn{days}@*)(*@\HLJLp{[}@*)(*@\HLJLn{\ensuremath{\tau}}@*)(*@\HLJLp{]],}@*) (*@\HLJLn{color}@*)(*@\HLJLoB{=:}@*)(*@\HLJLn{gray}@*)(*@\HLJLp{,}@*) (*@\HLJLn{linestyle}@*)(*@\HLJLoB{=:}@*)(*@\HLJLn{dot}@*)(*@\HLJLp{,}@*) (*@\HLJLn{linewidth}@*)(*@\HLJLoB{=}@*)(*@\HLJLni{2}@*)(*@\HLJLp{,}@*)  (*@\HLJLn{label}@*)(*@\HLJLoB{=}@*)(*@\HLJLs{"{}"{}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{markersize}@*)(*@\HLJLoB{=}@*)(*@\HLJLnfB{2.5}@*)(*@\HLJLp{)}@*)
 (*@\HLJLnf{display}@*)(*@\HLJLp{(}@*)(*@\HLJLn{pl}@*)(*@\HLJLp{)}@*)
-(*@\HLJLcs{{\#}}@*) (*@\HLJLcs{safesave(plotsdir(fold,}@*) (*@\HLJLcs{"{}ICU-IC-OC.png"{}),}@*) (*@\HLJLcs{pl)}@*)
 
 (*@\HLJLnf{println}@*)(*@\HLJLp{(}@*)(*@\HLJLs{"{}Possible}@*) (*@\HLJLs{change-point}@*) (*@\HLJLs{location:}@*) (*@\HLJLs{"{}}@*)(*@\HLJLp{,}@*) (*@\HLJLn{days}@*)(*@\HLJLp{[}@*)(*@\HLJLn{\ensuremath{\tau}}@*)(*@\HLJLp{])}@*)
 \end{lstlisting}
@@ -238,19 +246,20 @@ In-control data: [Dates.Date((*@{"{}}@*)2020-07-18(*@{"{}}@*)), Dates.Date((*@{"
 Possible change-point location: 2020-09-25
 \end{lstlisting}
 
-\includegraphics[width=\linewidth]{jl_64fcHC/admissionsICU_6_1.pdf}
+\includegraphics[width=\linewidth]{figures/admissionsICU_6_1.pdf}
 
-We then calculate the initial estimate $\hat{\theta}$ and set the nominal IC ARL alongside the GICP probability $\beta$.
+We can calculate the initial estimate $\hat{\theta}$ and set the desired nominal IC ARL of 500 alongside the GICP probability $\beta = 0.05$.
 
 
 \begin{lstlisting}
-(*@\HLJLn{thetaHat}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{mean}@*)(*@\HLJLp{(}@*)(*@\HLJLn{yIC}@*)(*@\HLJLp{)}@*)
 (*@\HLJLn{Arl0}@*) (*@\HLJLoB{=}@*) (*@\HLJLni{500}@*)
 (*@\HLJLn{beta}@*) (*@\HLJLoB{=}@*) (*@\HLJLnfB{0.05}@*)
+(*@\HLJLn{thetaHat}@*) (*@\HLJLoB{=}@*) (*@\HLJLnf{mean}@*)(*@\HLJLp{(}@*)(*@\HLJLn{yIC}@*)(*@\HLJLp{)}@*)
+(*@\HLJLnf{println}@*)(*@\HLJLp{(}@*)(*@\HLJLn{thetaHat}@*)(*@\HLJLp{)}@*)
 \end{lstlisting}
 
 \begin{lstlisting}
-0.05
+66.41463414634147
 \end{lstlisting}
 
 
@@ -304,6 +313,51 @@ applyChart (generic function with 1 method)
 \end{lstlisting}
 
 
+The function arguments are:
+
+\begin{itemize}
+\item \texttt{ch}: an \texttt{AbstractSeries} object, as defined in the \texttt{StatisticalProcessControl} package that is shipped with the source code.
+
+
+\item \texttt{um}: an \texttt{AbstractUpdate} object, as defined in the \texttt{StatisticalProcessControl} package that is shipped with the source code.
+
+
+\item \texttt{thetaHat}: the estimate of the IC mean.
+
+
+\item \texttt{m}: the initial sample size.
+
+
+\item \texttt{yprosp}: data onto which the control chart must be applied.
+
+
+\item \texttt{seed}: eventual seed that is passed to the GICP optimization for reproducibility. 
+
+\end{itemize}
+When the above function is called sequence of count data, the returned values are
+
+\begin{itemize}
+\item \texttt{t\_alarm}: the time of the first alarm.
+
+
+\item \texttt{dat}: the data onto which the control chart was applied.
+
+
+\item \texttt{chart\_values}: the vector of values of the control chart.
+
+
+\item \texttt{limit\_alarm}: the control chart limit.
+
+
+\item \texttt{limit\_cautious}: if the control chart has a warning region, this contains the value.
+
+
+\item \texttt{parameter\_updates}: the sequence of parameter values.
+
+
+\item \texttt{di}: the sequence of $d_t$'s.
+
+\end{itemize}
 Furthermore, we define a function that applies the control chart to a prospective monitoring data after having corrected the control limit to satisfy the GICP condition.
 
 
@@ -340,7 +394,7 @@ applyChartGICP (generic function with 1 method)
 \end{lstlisting}
 
 
-The GICP control limit correction uses the \texttt{adjust\_chart\_gicp} function defined in the source code, which implements the computations described in Subsection ??.
+The GICP control limit correction uses the \texttt{adjust\_chart\_gicp} function defined in the source code, which implements the control limit computation described in Subsection ??.
 
 We finally apply the control charts using the methods and obtain the results.  This code reproduces Figure ?? and Table ??.
 
@@ -377,9 +431,8 @@ We finally apply the control charts using the methods and obtain the results.  T
 (*@\HLJLso{library(knitr)}@*)
 (*@\HLJLso{library(kableExtra)}@*)
 (*@\HLJLso{df}@*) (*@\HLJLso{=}@*) (*@\HLJLso{cbind(nms,}@*) (*@\HLJLso{perf,}@*) (*@\HLJLso{L)}@*)
-(*@\HLJLso{tex{\_}OC}@*) (*@\HLJLso{<-}@*) (*@\HLJLso{kable(df,}@*) (*@\HLJLso{format="{}latex"{},}@*) (*@\HLJLso{booktabs=TRUE,}@*) (*@\HLJLso{digits}@*) (*@\HLJLso{=}@*) (*@\HLJLso{2,}@*) (*@\HLJLso{row.names=FALSE,}@*) (*@\HLJLso{col.names=c("{}Estimator"{},}@*) (*@\HLJLso{"{}Alarm"{},}@*) (*@\HLJLso{"{}Limit"{}),}@*) (*@\HLJLso{escape=FALSE,}@*) (*@\HLJLso{align={\textquotesingle}c{\textquotesingle},}@*) (*@\HLJLso{linesep}@*) (*@\HLJLso{=}@*) (*@\HLJLso{"{}"{},}@*)
-    (*@\HLJLso{caption}@*) (*@\HLJLso{=}@*) (*@\HLJLso{"{}Time}@*) (*@\HLJLso{to}@*) (*@\HLJLso{alarm}@*) (*@\HLJLso{of}@*) (*@\HLJLso{the}@*) (*@\HLJLso{one-sided}@*) (*@\HLJLso{EWMA}@*) (*@\HLJLso{control}@*) (*@\HLJLso{chart}@*) (*@\HLJLso{using}@*) (*@\HLJLso{the}@*) (*@\HLJLso{fixed}@*) (*@\HLJLso{(FE),}@*) (*@\HLJLso{adaptive}@*) (*@\HLJLso{(AE)}@*) (*@\HLJLso{and}@*) (*@\HLJLso{the}@*) (*@\HLJLso{proposed}@*) (*@\HLJLso{cautious}@*) (*@\HLJLso{learning}@*) (*@\HLJLso{(CLM)}@*) (*@\HLJLso{update}@*) (*@\HLJLso{rules."{},}@*) (*@\HLJLso{label="{}ICU}@*) (*@\HLJLso{OC}@*) (*@\HLJLso{alarm"{})}@*) (*@\HLJLso{{\%}>{\%}}@*)
-    (*@\HLJLso{kable{\_}styling(latex{\_}options}@*) (*@\HLJLso{=}@*) (*@\HLJLso{"{}HOLD{\_}position"{})}@*)
+(*@\HLJLso{tex{\_}OC}@*) (*@\HLJLso{<-}@*) (*@\HLJLso{kable(df,}@*) (*@\HLJLso{format="{}latex"{},}@*) (*@\HLJLso{digits}@*) (*@\HLJLso{=}@*) (*@\HLJLso{2,}@*) (*@\HLJLso{row.names=FALSE,}@*) (*@\HLJLso{col.names=c("{}Estimator"{},}@*) (*@\HLJLso{"{}Alarm"{},}@*) (*@\HLJLso{"{}Limit"{}),}@*) (*@\HLJLso{escape=FALSE,}@*) (*@\HLJLso{align={\textquotesingle}c{\textquotesingle},}@*) (*@\HLJLso{linesep}@*) (*@\HLJLso{=}@*) (*@\HLJLso{"{}"{},}@*)
+    (*@\HLJLso{caption}@*) (*@\HLJLso{=}@*) (*@\HLJLso{"{}Time}@*) (*@\HLJLso{to}@*) (*@\HLJLso{alarm}@*) (*@\HLJLso{of}@*) (*@\HLJLso{the}@*) (*@\HLJLso{one-sided}@*) (*@\HLJLso{EWMA}@*) (*@\HLJLso{control}@*) (*@\HLJLso{chart}@*) (*@\HLJLso{using}@*) (*@\HLJLso{the}@*) (*@\HLJLso{fixed}@*) (*@\HLJLso{(FE),}@*) (*@\HLJLso{adaptive}@*) (*@\HLJLso{(AE)}@*) (*@\HLJLso{and}@*) (*@\HLJLso{the}@*) (*@\HLJLso{proposed}@*) (*@\HLJLso{cautious}@*) (*@\HLJLso{learning}@*) (*@\HLJLso{(CLM)}@*) (*@\HLJLso{update}@*) (*@\HLJLso{rules."{},}@*) (*@\HLJLso{label="{}ICU}@*) (*@\HLJLso{OC}@*) (*@\HLJLso{alarm"{})}@*)
 (*@\HLJLso{"{}"{}"{}}@*) (*@\HLJLoB{|>}@*) (*@\HLJLn{rcopy}@*)
 
 (*@\HLJLnf{println}@*)(*@\HLJLp{(}@*)(*@\HLJLn{tab}@*)(*@\HLJLp{)}@*)
@@ -396,27 +449,26 @@ GICP done.
 Calculating GICP for extremum 1/1...
 GICP done.
 31	2020-09-27
-(*@{{\textbackslash}}@*)begin(*@{{\{}}@*)table(*@{{\}}}@*)[H]
-
-(*@{{\textbackslash}}@*)caption(*@{{\{}}@*)(*@{{\textbackslash}}@*)label(*@{{\{}}@*)tab:ICU OC alarm(*@{{\}}}@*)Time to alarm of the one-sided EWMA contro
-l chart using the fixed (FE), adaptive (AE) and the proposed cautious learn
-ing (CLM) update rules.(*@{{\}}}@*)
-(*@{{\textbackslash}}@*)centering
-(*@{{\textbackslash}}@*)begin(*@{{\{}}@*)tabular(*@{{\}}}@*)[t](*@{{\{}}@*)ccc(*@{{\}}}@*)
-(*@{{\textbackslash}}@*)toprule
-Estimator (*@{{\&}}@*) Alarm (*@{{\&}}@*) Limit(*@{{\textbackslash}}@*)(*@{{\textbackslash}}@*)
-(*@{{\textbackslash}}@*)midrule
-CLM (*@{{\&}}@*) 30 (*@{{\&}}@*) 1.05469060798468(*@{{\textbackslash}}@*)(*@{{\textbackslash}}@*)
-FE (*@{{\&}}@*) 41 (*@{{\&}}@*) 1.2147825075143(*@{{\textbackslash}}@*)(*@{{\textbackslash}}@*)
-AE (*@{{\&}}@*) 31 (*@{{\&}}@*) 1.02214273823991(*@{{\textbackslash}}@*)(*@{{\textbackslash}}@*)
-(*@{{\textbackslash}}@*)bottomrule
-(*@{{\textbackslash}}@*)end(*@{{\{}}@*)tabular(*@{{\}}}@*)
-(*@{{\textbackslash}}@*)end(*@{{\{}}@*)table(*@{{\}}}@*)
 \end{lstlisting}
 
-\includegraphics[width=\linewidth]{jl_64fcHC/admissionsICU_10_1.pdf}
-\includegraphics[width=\linewidth]{jl_64fcHC/admissionsICU_10_2.pdf}
-\includegraphics[width=\linewidth]{jl_64fcHC/admissionsICU_10_3.pdf}
+\begin{table}
+
+\caption{\label{tab:ICU OC alarm}Time to alarm of the one-sided EWMA control chart using the fixed (FE), adaptive (AE) and the proposed cautious learning (CLM) update rules.}
+\centering
+\begin{tabular}[t]{c|c|c}
+\hline
+Estimator & Alarm & Limit\\
+\hline
+CLM & 30 & 1.05469060798468\\
+FE & 41 & 1.2147825075143\\
+AE & 31 & 1.02214273823991\\
+\hline
+\end{tabular}
+\end{table}
+
+\includegraphics[width=\linewidth]{figures/admissionsICU_10_1.pdf}
+\includegraphics[width=\linewidth]{figures/admissionsICU_10_2.pdf}
+\includegraphics[width=\linewidth]{figures/admissionsICU_10_3.pdf}
 
 
 \end{document}

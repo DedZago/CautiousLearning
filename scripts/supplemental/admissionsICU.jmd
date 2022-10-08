@@ -8,6 +8,8 @@ format:
     fig-height: 6
 ---
 
+``\include{additional-simulations.tex}``
+
 # Application to the ICU admissions data 
 Here, we implement the code that reproduces the analysis on the ICU dataset in Section 5 of the paper.
 
@@ -17,7 +19,7 @@ First, we load the necessary packages and the environment variables that are pro
 cd("$(homedir())/Documents/git/SPC/CautiousLearning")
 ```
 
-```julia, cache=true
+```julia
 using DrWatson
 #@quickactivate "CautiousLearning"
 quickactivate("$(homedir())/Documents/git/SPC/CautiousLearning")
@@ -38,7 +40,7 @@ include(srcdir("cfg.jl"))
 First, we load the dataset which is located in the `data/ICUadmissions` folder, relative to the main directory of the project.
 We consider the data concerning the New York City area in 2020.
 
-```julia, cache=true
+```julia
 fold = "ICUadmissions"
 dat = DataFrame(CSV.File(datadir(fold, "New_York_Forward_COVID-19_Daily_Hospitalization_Summary_by_Region.csv")))
 nydat = filter(row -> row.Region == "NEW YORK CITY", dat)
@@ -48,7 +50,7 @@ nydat = filter(row -> year(row.date) == 2020, nydat);
 
 We obtain the daily ICU counts along with the corresponding dates, which start from March 2020.
 
-```julia, cache=true
+```julia
 using Plots.PlotMeasures
 y2020 = nydat[:, 4]
 days2020 = nydat[:, 5]
@@ -59,7 +61,7 @@ first(days2020, 10)
 Then, we select the indices of the IC/OC datasets along with the initial sample size and prospective monitoring size.
 The following code reproduces Figure ?? in the paper.
 
-```julia, cache=true
+```julia
 # ic_2020 = 115:175
 ic_2020 = 115:155
 oc_2020 = (ic_2020[end]+1):length(y2020)
@@ -73,7 +75,7 @@ plot!(pl, days2020[ic_2020], fill(0, n_ic), fillrange=fill(maximum(y2020), n_ic)
 We then isolate the IC and OC data.
 This code reproduces Figure ?? in the paper.
 
-```julia, cache=true
+```julia
 y = y2020[[ic_2020; oc_2020]]
 days = days2020[[ic_2020; oc_2020]]
 
@@ -96,17 +98,18 @@ println("Possible change-point location: ", days[τ])
 
 ```
 
-We then calculate the initial estimate $\hat{\theta}$ and set the nominal IC ARL alongside the GICP probability $\beta$.
+We can calculate the initial estimate $\hat{\theta}$ and set the desired nominal IC ARL of 500 alongside the GICP probability $\beta = 0.05$.
 
-```julia, cache=true
-thetaHat = mean(yIC)
+```julia
 Arl0 = 500
 beta = 0.05
+thetaHat = mean(yIC)
+println(thetaHat)
 ```
 
 Next, we define a function that implements the control chart procedures using the various update mechanisms (AE, FE, CLM) that are defined in the source code.
 
-```julia, cache=true
+```julia
 function applyChart(ch, um, thetaHat, m, yprosp; seed = 123)
     # Random.seed!(seed)
     maxrl_i = length(yprosp)
@@ -148,9 +151,28 @@ function applyChart(ch, um, thetaHat, m, yprosp; seed = 123)
 end
 ```
 
+The function arguments are:
+
+* `ch`: an `AbstractSeries` object, as defined in the `StatisticalProcessControl` package that is shipped with the source code.
+* `um`: an `AbstractUpdate` object, as defined in the `StatisticalProcessControl` package that is shipped with the source code.
+* `thetaHat`: the estimate of the IC mean.
+* `m`: the initial sample size.
+* `yprosp`: data onto which the control chart must be applied.
+* `seed`: eventual seed that is passed to the GICP optimization for reproducibility. 
+
+When the above function is called sequence of count data, the returned values are
+
+* `t_alarm`: the time of the first alarm.
+* `dat`: the data onto which the control chart was applied.
+* `chart_values`: the vector of values of the control chart.
+* `limit_alarm`: the control chart limit.
+* `limit_cautious`: if the control chart has a warning region, this contains the value.
+* `parameter_updates`: the sequence of parameter values.
+* `di`: the sequence of $d_t$'s.
+
 Furthermore, we define a function that applies the control chart to a prospective monitoring data after having corrected the control limit to satisfy the GICP condition.
 
-```julia, cache=true
+```julia
 function applyChartGICP(ch, um, yinit, yprosp, thetaHat, Arl0; beta::Union{Bool, Float64} = 0.2, maxrl=1e04, verbose=true, seed=Int(rand(1:1e06)))
     m = length(yinit)
     if isa(um, CautiousLearning)
@@ -178,12 +200,12 @@ function applyChartGICP(ch, um, yinit, yprosp, thetaHat, Arl0; beta::Union{Bool,
 end
 ```
 
-The GICP control limit correction uses the `adjust_chart_gicp` function defined in the source code, which implements the computations described in Subsection ??.
+The GICP control limit correction uses the `adjust_chart_gicp` function defined in the source code, which implements the control limit computation described in Subsection ??.
 
 We finally apply the control charts using the methods and obtain the results. 
 This code reproduces Figure ?? and Table ??.
 
-```julia, cache=true
+```julia, results="tex"
 Random.seed!(2022-08-18)
 D = Poisson
 fname = plotsdir(fold, "alarms.jld2")
@@ -215,9 +237,8 @@ tab = R"""
 library(knitr)
 library(kableExtra)
 df = cbind(nms, perf, L)
-tex_OC <- kable(df, format="latex", booktabs=TRUE, digits = 2, row.names=FALSE, col.names=c("Estimator", "Alarm", "Limit"), escape=FALSE, align='c', linesep = "",
-    caption = "Time to alarm of the one-sided EWMA control chart using the fixed (FE), adaptive (AE) and the proposed cautious learning (CLM) update rules.", label="ICU OC alarm") %>%
-    kable_styling(latex_options = "HOLD_position")
+tex_OC <- kable(df, format="latex", digits = 2, row.names=FALSE, col.names=c("Estimator", "Alarm", "Limit"), escape=FALSE, align='c', linesep = "",
+    caption = "Time to alarm of the one-sided EWMA control chart using the fixed (FE), adaptive (AE) and the proposed cautious learning (CLM) update rules.", label="ICU OC alarm")
 """ |> rcopy
 
 println(tab)
