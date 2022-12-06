@@ -5,6 +5,14 @@ library(stringr)
 library(scales)
 options(knitr.table.NA = '-')
 
+get_legend<-function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+
 compute_summary_IC = function(dat){
     # Aggregate IC results and put into a summary table
     out = aggregate(dat$ARL, list("Type" = dat$um), mean)
@@ -53,6 +61,7 @@ plotProfiles = function(dat, only_oc = TRUE){
     require(dplyr)
     require(latex2exp)
     require(ggpubr)
+    require(gridExtra)
     proc = dat %>% 
         group_by(um, delta, tau) %>% 
         summarise_at(vars(ARL), list(stat = median))
@@ -72,15 +81,28 @@ plotProfiles = function(dat, only_oc = TRUE){
             ylab("median") + 
             geom_line() +
             geom_point() +
+            guides(shape = "none") +
             theme_bw() + 
+            scale_color_discrete(labels=c('AE', 'MCL', "C&M", 'FE'))+
             scale_x_continuous(breaks = seq(min(df_plot$delta), max(df_plot$delta), by = 0.25)) +
             ggtitle(TeX(paste0("$\\tau = ", as.character(tau), "$"))) +
-            theme(legend.title=element_blank()) 
+            theme(legend.title=element_blank(), legend.direction="horizontal") 
         plotList[[i]] = p
     }
+    shared_legend <- get_legend(plotList[[1]])
+    plt = grid.arrange(arrangeGrob(
+        plotList[[1]] + theme(legend.position="none"), 
+        plotList[[2]] + theme(legend.position="none"),
+        plotList[[3]] + theme(legend.position="none"),
+        nrow=3),
+        shared_legend,
+        nrow = 3,
+        heights = c(10, 1, 1))
 
-    plt = ggarrange(plotList[[1]], plotList[[2]], plotList[[3]], ncol = 1, nrow = length(plotList), common.legend = TRUE, legend="top")
+    # plt = ggarrange(plotList[[1]], plotList[[2]], plotList[[3]], ncol = 1, nrow = length(plotList), common.legend = TRUE, legend="top")+
+            # labs(color = "Dose (mg)") +
 
+            # scale_fill_discrete(labels=c('AE', 'MCL', "C&M", 'FE'))+
     return(plt)
 }
 
@@ -101,13 +123,14 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
             scale_x_continuous(expand = expansion(mult=0.05)) +
             theme_bw() + 
             theme(legend.position="top")+
+            scale_fill_discrete(labels=c('AE', 'MCL', "C&M", 'FE'))+
             guides(fill=guide_legend(title=NULL))
 
         ggsave(paste0(outputFolder, "/limits.png"), p)
     }
 
     if(file.exists(outputFile)){
-        allMethods = c("AE", "CLM", "C&M", "FE")
+        allMethods = c("AE", "MCL", "C&M", "FE")
         dat = read.csv(outputFile)
         # Boxplot ARL results
         png(paste0(outputFolder, "/IC.png"), height=1600, width = 2440, res=300)

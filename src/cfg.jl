@@ -41,17 +41,16 @@ Base.string(um::CautiousLearningCM) = "CautiousLearningCM"
 Base.string(ch::UnivariateSeries) = string(typeof(ch)) * string(get_params(ch))
 
 
-# umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0)]
-umVec = [CautiousLearningCM()]
+umVec = [FixedParameter(), AdaptiveEstimator(), CautiousLearning(ATS=0), CautiousLearningCM()]
 
-# seed = 2022-08-23
-# Random.seed!(seed)
-# maxseed = Int(1e09)
-# config = [
-#           [SimulationSettings(ch = signedEWMA(l=0.033, L=1.0), D=Poisson(1.0), um = um, seed = rand(1:maxseed)) for um in umVec];
-#             [SimulationSettings(ch = signedEWMA(l=0.0230, L=1.0), D=Poisson(4.0), um = um, seed = rand(1:maxseed)) for um in umVec];
-#             [SimulationSettings(ch = signedEWMA(l=0.0190, L=1.0), D=Poisson(7.0), um = um, seed = rand(1:maxseed)) for um in umVec];
-#            ]
+seed = 2022-08-23
+Random.seed!(seed)
+maxseed = Int(1e09)
+config = [
+          [SimulationSettings(ch = signedEWMA(l=0.033, L=1.0), D=Poisson(1.0), um = um, seed = rand(1:maxseed)) for um in umVec];
+            [SimulationSettings(ch = signedEWMA(l=0.0230, L=1.0), D=Poisson(4.0), um = um, seed = rand(1:maxseed)) for um in umVec];
+            [SimulationSettings(ch = signedEWMA(l=0.0190, L=1.0), D=Poisson(7.0), um = um, seed = rand(1:maxseed)) for um in umVec];
+           ]
 
 seed = 2022-09-22
 Random.seed!(seed)
