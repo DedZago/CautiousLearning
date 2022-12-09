@@ -4,6 +4,8 @@ using DrWatson
 include(srcdir("cfg.jl"))
 using Plots, StatsPlots, LaTeXStrings
 
+DrWatson._wsave(s, fig::T) where T <: Plots.Plot{Plots.GRBackend} = savefig(fig, s)
+
 function runSimulationInfo(ch, um, thetaHat, D, m; IC=true, tau=1, delta=0.0, maxrl=Int(1e04))
     maxrl_i = Int(round(maxrl))
     thetaHatVec = zeros(maxrl_i)
@@ -122,10 +124,10 @@ Random.seed!(13)
 tau = 150
 res = runSimulationInfo(chart, um, thetaHat, D, m, IC=false, tau=tau, delta=0.65, maxrl=maxrl)
 plt = plot_comparison(res, tau=tau)
-safesave(folder * "/shaded-regions-cl", plt)
+safesave(folder * "/shaded-regions-cl.pdf", plt)
 
 plt = plot_window_of_opportunity(res, tau=tau, jmpsize=0.1)
-safesave(folder * "/thetahat", plt)
+safesave(folder * "/thetahat.pdf", plt)
 
 Random.seed!(123)
 yinit = rand(D, m)
