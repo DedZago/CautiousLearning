@@ -1,0 +1,178 @@
+\begin{table}[!h]
+
+\caption{Summary of the out-of-control performance of the control chart using the fixed-parameter, adaptive estimator, and the proposed cautious learning update rules.}
+\centering
+\begin{tabular}[t]{ccccccccc}
+\toprule
+tau & delta & Type & Min. & 1st Qu. & Median & Mean & 3rd Qu. & Max.\\
+\midrule
+ &  & AdaptiveEstimator & 28.628 & 320.982 & 449.977 & 433.594 & 544.550 & 774.035\\
+
+ &  & CautiousLearning(ATS=0) & 17.150 & 210.640 & 413.314 & 400.659 & 568.273 & 928.662\\
+
+ &  & CautiousLearningCM & 17.610 & 142.394 & 379.319 & 392.344 & 593.101 & 1057.052\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.25} & FixedParameter & 22.704 & 144.380 & 334.749 & 636.991 & 685.361 & 5873.788\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 19.132 & 210.776 & 339.070 & 330.819 & 434.281 & 689.035\\
+
+ &  & CautiousLearning(ATS=0) & 14.392 & 93.349 & 239.412 & 262.087 & 381.973 & 803.869\\
+
+ &  & CautiousLearningCM & 14.404 & 61.923 & 170.936 & 235.028 & 336.508 & 902.937\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.35} & FixedParameter & 17.970 & 80.977 & 163.146 & 280.860 & 301.179 & 2900.401\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 13.018 & 94.741 & 186.483 & 197.982 & 274.964 & 561.534\\
+
+ &  & CautiousLearning(ATS=0) & 11.271 & 33.007 & 74.641 & 117.739 & 152.320 & 575.355\\
+
+ &  & CautiousLearningCM & 11.624 & 29.751 & 50.329 & 92.246 & 101.250 & 621.565\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.50} & FixedParameter & 13.903 & 42.603 & 70.906 & 100.107 & 114.355 & 752.436\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 9.138 & 24.442 & 45.921 & 63.754 & 79.422 & 295.248\\
+
+ &  & CautiousLearning(ATS=0) & 8.622 & 16.213 & 21.309 & 27.954 & 28.880 & 186.096\\
+
+ &  & CautiousLearningCM & 8.621 & 16.535 & 21.447 & 24.658 & 27.194 & 120.587\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.75} & FixedParameter & 10.029 & 21.096 & 28.845 & 33.031 & 38.288 & 127.904\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 7.173 & 12.802 & 16.884 & 20.941 & 22.984 & 100.176\\
+
+ &  & CautiousLearning(ATS=0) & 6.962 & 11.223 & 13.451 & 14.067 & 15.816 & 33.702\\
+
+ &  & CautiousLearningCM & 7.046 & 11.391 & 13.635 & 14.205 & 16.022 & 30.428\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 1.00} & FixedParameter & 7.995 & 13.740 & 16.953 & 17.885 & 20.441 & 43.476\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 6.047 & 9.220 & 10.906 & 11.398 & 12.599 & 26.981\\
+
+ &  & CautiousLearning(ATS=0) & 5.979 & 8.651 & 9.966 & 10.111 & 11.138 & 17.084\\
+
+ &  & CautiousLearningCM & 5.994 & 8.779 & 10.076 & 10.223 & 11.297 & 17.465\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 1.25} & FixedParameter & 6.734 & 10.270 & 11.944 & 12.193 & 13.463 & 22.324\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 5.258 & 7.405 & 8.387 & 8.484 & 9.253 & 14.050\\
+
+ &  & CautiousLearning(ATS=0) & 5.250 & 7.199 & 8.022 & 8.063 & 8.749 & 12.014\\
+
+ &  & CautiousLearningCM & 5.297 & 7.229 & 8.088 & 8.131 & 8.827 & 12.117\\
+
+\multirow[t]{-28}{*}{\centering\arraybackslash 1} & \multirow[t]{-4}{*}{\centering\arraybackslash 1.50} & FixedParameter & 5.863 & 8.295 & 9.339 & 9.418 & 10.262 & 14.704\\
+\cmidrule{1-9}
+ &  & AdaptiveEstimator & 55.033 & 268.451 & 352.918 & 348.576 & 421.207 & 611.789\\
+
+ &  & CautiousLearning(ATS=0) & 32.445 & 211.182 & 335.437 & 333.013 & 435.151 & 708.932\\
+
+ &  & CautiousLearningCM & 32.581 & 188.176 & 365.475 & 366.015 & 509.708 & 858.595\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.25} & FixedParameter & 42.249 & 183.260 & 373.915 & 679.106 & 724.362 & 5966.222\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 46.448 & 177.465 & 239.075 & 240.736 & 291.391 & 480.545\\
+
+ &  & CautiousLearning(ATS=0) & 31.466 & 122.679 & 198.634 & 205.937 & 265.543 & 520.218\\
+
+ &  & CautiousLearningCM & 31.660 & 106.865 & 205.985 & 228.882 & 314.202 & 673.216\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.35} & FixedParameter & 41.400 & 124.049 & 208.055 & 323.621 & 347.784 & 2882.117\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 41.059 & 99.917 & 129.452 & 134.518 & 160.618 & 287.046\\
+
+ &  & CautiousLearning(ATS=0) & 31.191 & 73.902 & 95.754 & 103.841 & 122.157 & 264.503\\
+
+ &  & CautiousLearningCM & 31.505 & 72.870 & 99.360 & 117.272 & 140.201 & 378.418\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.50} & FixedParameter & 39.437 & 86.557 & 116.874 & 144.800 & 160.121 & 776.944\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 38.284 & 64.410 & 71.175 & 71.806 & 77.421 & 111.784\\
+
+ &  & CautiousLearning(ATS=0) & 30.246 & 59.424 & 65.009 & 64.298 & 68.772 & 89.559\\
+
+ &  & CautiousLearningCM & 31.003 & 60.426 & 67.654 & 69.000 & 74.851 & 128.031\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.75} & FixedParameter & 38.341 & 66.756 & 75.800 & 79.263 & 85.970 & 177.158\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 37.581 & 57.448 & 60.401 & 59.787 & 62.400 & 69.909\\
+
+ &  & CautiousLearning(ATS=0) & 30.081 & 55.261 & 58.761 & 57.576 & 60.663 & 66.573\\
+
+ &  & CautiousLearningCM & 30.784 & 56.138 & 60.443 & 59.809 & 63.465 & 78.003\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 1.00} & FixedParameter & 37.703 & 60.161 & 64.222 & 64.624 & 67.986 & 92.212\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 36.496 & 54.725 & 56.732 & 56.056 & 57.909 & 61.329\\
+
+ &  & CautiousLearning(ATS=0) & 29.898 & 53.171 & 55.851 & 54.796 & 57.301 & 60.343\\
+
+ &  & CautiousLearningCM & 30.468 & 54.021 & 57.070 & 56.208 & 58.931 & 65.700\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 1.25} & FixedParameter & 37.566 & 57.028 & 59.580 & 59.274 & 61.547 & 70.865\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 36.108 & 53.248 & 54.923 & 54.248 & 55.857 & 57.883\\
+
+ &  & CautiousLearning(ATS=0) & 29.610 & 52.076 & 54.402 & 53.289 & 55.510 & 57.786\\
+
+ &  & CautiousLearningCM & 30.387 & 52.874 & 55.239 & 54.350 & 56.679 & 60.731\\
+
+\multirow[t]{-28}{*}{\centering\arraybackslash 50} & \multirow[t]{-4}{*}{\centering\arraybackslash 1.50} & FixedParameter & 37.345 & 55.274 & 57.211 & 56.706 & 58.415 & 63.313\\
+\cmidrule{1-9}
+ &  & AdaptiveEstimator & 69.757 & 264.947 & 327.941 & 322.798 & 378.852 & 529.724\\
+
+ &  & CautiousLearning(ATS=0) & 36.495 & 240.868 & 332.688 & 323.965 & 401.306 & 602.801\\
+
+ &  & CautiousLearningCM & 35.724 & 226.641 & 349.023 & 336.438 & 435.317 & 670.791\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.25} & FixedParameter & 50.109 & 226.632 & 418.542 & 718.794 & 771.022 & 5928.271\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 61.826 & 186.334 & 226.991 & 226.983 & 262.717 & 378.073\\
+
+ &  & CautiousLearning(ATS=0) & 36.269 & 159.588 & 211.691 & 210.997 & 252.795 & 404.777\\
+
+ &  & CautiousLearningCM & 35.346 & 152.384 & 215.250 & 214.936 & 268.344 & 444.441\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.35} & FixedParameter & 48.998 & 168.479 & 255.165 & 368.295 & 393.251 & 2945.333\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 57.313 & 130.458 & 148.877 & 148.434 & 164.623 & 221.763\\
+
+ &  & CautiousLearning(ATS=0) & 35.729 & 115.131 & 134.598 & 132.972 & 149.924 & 215.031\\
+
+ &  & CautiousLearningCM & 35.398 & 115.498 & 138.656 & 137.049 & 155.856 & 234.652\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.50} & FixedParameter & 48.572 & 131.967 & 164.632 & 191.365 & 208.144 & 853.157\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 54.176 & 105.899 & 113.344 & 111.150 & 117.441 & 132.148\\
+
+ &  & CautiousLearning(ATS=0) & 35.383 & 99.969 & 109.220 & 105.730 & 114.177 & 125.824\\
+
+ &  & CautiousLearningCM & 35.409 & 102.591 & 113.301 & 109.474 & 119.256 & 135.901\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 0.75} & FixedParameter & 48.944 & 113.349 & 124.516 & 126.231 & 135.090 & 228.034\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 53.367 & 99.953 & 105.477 & 103.327 & 108.335 & 113.783\\
+
+ &  & CautiousLearning(ATS=0) & 34.808 & 95.602 & 103.449 & 99.922 & 107.016 & 113.345\\
+
+ &  & CautiousLearningCM & 34.587 & 98.173 & 106.822 & 102.755 & 110.386 & 118.016\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 1.00} & FixedParameter & 48.205 & 106.687 & 113.282 & 111.776 & 117.601 & 141.833\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 53.312 & 97.829 & 102.368 & 100.330 & 104.708 & 108.737\\
+
+ &  & CautiousLearning(ATS=0) & 35.351 & 93.671 & 100.792 & 97.403 & 103.838 & 108.640\\
+
+ &  & CautiousLearningCM & 35.049 & 96.324 & 103.901 & 99.816 & 106.588 & 111.619\\
+
+ & \multirow[t]{-4}{*}{\centering\arraybackslash 1.25} & FixedParameter & 48.229 & 103.860 & 108.508 & 106.535 & 111.090 & 120.843\\
+\cmidrule{2-9}
+ &  & AdaptiveEstimator & 52.264 & 96.426 & 100.854 & 98.735 & 102.950 & 106.330\\
+
+ &  & CautiousLearning(ATS=0) & 35.231 & 92.895 & 99.364 & 95.968 & 102.244 & 106.201\\
+
+ &  & CautiousLearningCM & 34.756 & 95.236 & 102.147 & 98.231 & 104.583 & 108.494\\
+
+\multirow[t]{-28}{*}{\centering\arraybackslash 100} & \multirow[t]{-4}{*}{\centering\arraybackslash 1.50} & FixedParameter & 48.054 & 102.256 & 106.168 & 104.019 & 108.010 & 113.328\\
+\bottomrule
+\end{tabular}
+\end{table}

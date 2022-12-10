@@ -1,0 +1,13 @@
+name = "StatisticalProcessControl"
+uuid = "40bfdd64-93df-4c82-9e2d-65fc7bdf71bb"
+authors = ["Daniele Zago <daniele.zago.1@phd.unipd.it>"]
+version = "0.1.0"
+
+[compat]
+julia = "1.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
