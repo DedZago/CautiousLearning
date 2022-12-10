@@ -10,7 +10,7 @@ using StatisticalProcessControl
 
 include(srcdir("generate_data.jl"))
 include(srcdir("update_parameter.jl"))
-include(srcdir("cfg.jl"))
+include(srcdir("cfg.jl"));
 include(srcdir("simulate_runs.jl"))
 
 fold = "ICUadmissions"
