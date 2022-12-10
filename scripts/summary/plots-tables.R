@@ -1,3 +1,4 @@
+setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
 library(knitr)
 library(kableExtra)
 library(broom)
@@ -109,7 +110,6 @@ plotProfiles = function(dat, only_oc = TRUE){
 library(ggplot2)
 transp = 0.3
 
-setwd("/home/dede/Documents/git/SPC/CautiousLearning/")
 for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names=TRUE)){
     limitsFile = paste0(sims_folder, "/output/limits_R.csv")
     outputFile = paste0(sims_folder, "/output/output_R.csv")
