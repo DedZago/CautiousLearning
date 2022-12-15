@@ -57,4 +57,4 @@ Random.seed!(seed)
 maxseed = Int(1e09)
 lambda = [0.050, 0.075, 0.100, 0.125, 0.150, 0.175, 0.200]
 seed_values = [rand(1:maxseed) for _ in lambda]
-config = [SimulationSettings(ch = signedEWMA(l=lambda[i], L=1.0), D=Poisson(4.0), um = um, seed = seed_values[i])  for i in 1:length(lambda) for um in umVec]
+config = [config; [SimulationSettings(ch = signedEWMA(l=lambda[i], L=1.0), D=Poisson(4.0), um = um, seed = seed_values[i])  for i in 1:length(lambda) for um in umVec]]
