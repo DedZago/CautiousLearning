@@ -120,6 +120,7 @@ for(sims_folder in list.files(path = "data/sims", pattern = "theta*", full.names
         p = ggplot(limits, aes(x = L, group = um)) +
             geom_density(aes(y = ..scaled.., fill=um), alpha=transp) + 
             scale_x_continuous(expand = expansion(mult=0.05)) +
+            ylab("density")+
             theme_bw() + 
             theme(legend.position="top")+
             scale_fill_discrete(labels=c('AE', 'MCL', "C&M", 'FE'))+
